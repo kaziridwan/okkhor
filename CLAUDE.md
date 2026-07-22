@@ -22,7 +22,7 @@ legacy files.
 - Vanilla JS (ES5-style in `src/doc-*.js` for consistency), single-file HTML app
 - JSZip 3.10.1 from cdnjs at runtime (only runtime dependency; dev copy via npm for tests)
 - `DecompressionStream` (browser/Node built-in) for deflate-compressed metafiles
-- Conversion core: bundled from `bijoy2unicode` v1.0.2 (MIT — see `dist/licenses/`)
+- Conversion core: bundled from `bijoy2unicode` v1.0.2 (MIT — see `docs/licenses/`)
 - Python 3 for the build splice; Node ≥20 for tests (the suite uses the global File class)
 - Google Fonts at runtime: Noto Serif Bengali, Archivo, IBM Plex Mono
 
@@ -30,12 +30,12 @@ legacy files.
 
 ```bash
 npm install                      # dev-only (jszip for tests)
-npm run build                    # assemble dist/index.html + node --check each script block
+npm run build                    # assemble docs/index.html + node --check each script block
 npm test                         # 28-assertion regression suite over fixtures/
-open dist/index.html             # the app works from file:// or any static host
+open docs/index.html             # the app works from file:// or any static host
 ```
 
-There is no watch mode; edit `src/`, re-run build. `dist/` is the deployable
+There is no watch mode; edit `src/`, re-run build. `docs/` is the deployable
 GitHub Pages site (includes `.nojekyll` and README).
 
 ## Layout
@@ -49,12 +49,12 @@ src/
   doc-convert.js       .doc pipeline: detection, conversion, docx emission (tables, media, rels)
   scan-fns.js          scan helpers extracted from upstream dist/index.js (used by rebuild script)
 scripts/
-  assemble.py          splices src → dist/index.html (--check runs node --check per script block)
+  assemble.py          splices src → docs/index.html (--check runs node --check per script block)
   rebuild-engine.sh    regenerates src/engine.js from npm (only when upgrading upstream)
 tests/
   run-tests.cjs        full regression suite (text, docx path, all .doc features)
 fixtures/              .doc files (LibreOffice-generated ground truth) + their .docx sources + images
-dist/                  deployable site: index.html, README, license attribution, .nojekyll
+docs/                  deployable site: index.html, README, license attribution, .nojekyll
 agent-context/         project documentation wiki — see below
 ```
 

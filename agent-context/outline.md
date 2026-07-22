@@ -32,9 +32,9 @@ and refused with a clear message).
 
 ## Current state
 
-v5. All source in `src/`, deployable site in `dist/`, 28-assertion regression
+v5. All source in `src/`, deployable site in `docs/`, 28-assertion regression
 suite green (`npm test`), and `python3 scripts/assemble.py` reproduces
-`dist/index.html` byte-for-byte. The version history that got here:
+`docs/index.html` byte-for-byte. The version history that got here:
 
 - **v1** — .docx/.rtf/.odt/.html/.txt via the bundled `bijoy2unicode` engine
   (MIT); font-aware run detection; leftover-glyph scan; paste converter; UI.

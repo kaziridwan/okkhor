@@ -3,6 +3,20 @@
 ADR-style log. Newest at the top. Each entry should let a future agent
 understand *why* without re-deriving it.
 
+## D-009. Deployable directory renamed `dist/` → `docs/`
+
+- **Date:** 2026-07-22 (v5)
+- **Status:** accepted
+- **Context:** The site will be published via GitHub Pages, which can serve
+  directly from a `/docs` folder on the default branch — no branch juggling
+  or copy-to-root step.
+- **Decision:** The assembled site lives in `docs/` (index.html, README,
+  `.nojekyll`, licenses). `scripts/assemble.py` writes `docs/index.html`.
+- **Rationale:** Matches the GitHub Pages "deploy from folder" convention;
+  removes the publish friction noted in the handoff plan.
+- **Alternatives considered:** Keep `dist/` and use a Pages deploy action
+  (extra CI for a static file); serve from repo root (clutters the repo).
+
 ## D-008. Always-bordered fallback, borders read from TC80 when possible
 
 - **Date:** during handoff conversation (v5)
@@ -106,7 +120,8 @@ understand *why* without re-deriving it.
 - **Status:** accepted
 - **Context:** Product goal: trivially hostable (GitHub Pages), auditable,
   works from `file://`, no build framework.
-- **Decision:** One `dist/index.html`. Development happens in `src/` modules;
+- **Decision:** One `docs/index.html` (originally `dist/`; renamed in v5 —
+  see D-009). Development happens in `src/` modules;
   `scripts/assemble.py` splices them into the template's `/*__ENGINE__*/`
   placeholder. Runtime deps only via cdnjs (JSZip); fonts via Google Fonts.
 - **Rationale:** Zero-install deploy and easy source audit outweigh the
@@ -126,7 +141,7 @@ understand *why* without re-deriving it.
 - **Decision:** Bundle `bijoy2unicode` v1.0.2 (MIT, Md. Jehad / JehadurRE)
   dist code into `src/engine.js` via `scripts/rebuild-engine.sh`, exporting
   extra internal helpers (bigrams, font-name checks) the app needs. License
-  and credit ship in `dist/licenses/` and the app footer.
+  and credit ship in `docs/licenses/` and the app footer.
 - **Rationale:** It passed all hard test phrases (কর্মকর্তার, বিস্তারিত,
   স্বাধীনতা, গণপ্রজাতন্ত্রী) including trailing-reph and prefix-pair cases, is
   browser-compatible with JSZip as its only dependency, and includes a

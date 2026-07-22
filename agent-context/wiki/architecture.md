@@ -5,7 +5,7 @@ One deployable file, three source modules, one build splice.
 ## Module map
 
 ```
-dist/index.html  =  src/template.html
+docs/index.html  =  src/template.html
                     with /*__ENGINE__*/ replaced by, in order:
                     ├── src/engine.js       window.BijoyEngine  (bundled upstream)
                     ├── src/doc-extract.js  window.DocExtract   (.doc binary → blocks)
@@ -68,8 +68,8 @@ renders in mono — it *is* Latin gibberish until converted.
 
 ## Build & deploy
 
-- `python3 scripts/assemble.py --check` → `dist/index.html` (byte-reproducible)
-- `dist/` is the complete GitHub Pages site (`.nojekyll`, README, licenses)
+- `python3 scripts/assemble.py --check` → `docs/index.html` (byte-reproducible)
+- `docs/` is the complete GitHub Pages site (`.nojekyll`, README, licenses)
 - `src/engine.js` is generated-but-committed; regenerate only via
   `scripts/rebuild-engine.sh` when upgrading upstream `bijoy2unicode`
 

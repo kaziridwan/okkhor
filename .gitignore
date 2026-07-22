@@ -1,0 +1,15 @@
+# npm (dev-only dependency: jszip for tests)
+node_modules/
+
+# Python (scripts/assemble.py)
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# LibreOffice lock files (left behind when generating fixtures)
+.~lock.*#
+
+# npm logs
+npm-debug.log*

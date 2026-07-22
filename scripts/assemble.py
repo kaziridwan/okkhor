@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Assemble dist/index.html from src/.
+"""Assemble docs/index.html from src/.
 
 The app is a single HTML file: src/template.html contains the UI and app
 logic, with a /*__ENGINE__*/ placeholder inside a <script> block. This
 script replaces the placeholder with the three JS modules in load order
-(engine, doc-extract, doc-convert) and writes dist/index.html.
+(engine, doc-extract, doc-convert) and writes docs/index.html.
 
 Run from anywhere:  python3 scripts/assemble.py
 Then syntax-check:  python3 scripts/assemble.py --check   (requires node)
@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
-OUT = ROOT / "dist" / "index.html"
+OUT = ROOT / "docs" / "index.html"
 
 def build() -> str:
     tpl = (SRC / "template.html").read_text(encoding="utf-8")

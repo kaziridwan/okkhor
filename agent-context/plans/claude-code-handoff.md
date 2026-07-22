@@ -5,8 +5,8 @@
 Okkhor is at v5: the single-file converter handles .docx/.rtf/.odt/.html/.txt
 via the bundled engine, and .doc via a from-scratch binary parser that
 preserves formatting, images (raster + vector), and real tables. Build is
-reproducible (`npm run build` recreates `dist/index.html` byte-for-byte),
-`npm test` is green (28 assertions), and `dist/` is a ready GitHub Pages
+reproducible (`npm run build` recreates `docs/index.html` byte-for-byte),
+`npm test` is green (28 assertions), and `docs/` is a ready GitHub Pages
 site. Everything is validated on synthetic LibreOffice-generated fixtures;
 no real-world legacy file has been through it yet.
 
@@ -16,9 +16,9 @@ no real-world legacy file has been through it yet.
    git add -A && git commit -m "Okkhor v5 — handoff"`, then
    `gh repo create okkhor --private --source . --push` (confirm repo name and
    visibility with Kazi first). Skip if the repo already exists.
-1. **Publish and validate on real files.** Push `dist/` (or the whole repo
-   with Pages serving `/dist` — or copy dist contents to root) to GitHub
-   Pages. Then run real 1990s–2000s Bijoy documents through it. Done =
+1. **Publish and validate on real files.** Push the repo and enable GitHub
+   Pages serving from the `docs/` folder on `main` (the site directory was
+   renamed from `dist/` to `docs/` for exactly this). Then run real 1990s–2000s Bijoy documents through it. Done =
    a handful of genuine files convert with correct output, and every
    leftover-glyph chip or visual defect is triaged into issues/fixtures.
    Expect: glyph-map holes (scanner will show them), fast-saved files with
