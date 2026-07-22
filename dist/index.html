@@ -1,0 +1,2932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okkhor — Bijoy to Unicode converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@500;700;800&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EE;
+    --card: #FBFAF7;
+    --ink: #1A2420;
+    --ink-soft: #55605A;
+    --bottle: #00693E;
+    --bottle-deep: #0B4A30;
+    --lal: #E5233D;
+    --line: #DAD8CE;
+    --line-soft: #E7E5DC;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --ui: "Archivo", system-ui, sans-serif;
+    --bangla: "Noto Serif Bengali", serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 28px 0 22px; border-bottom: 1px solid var(--line);
+    flex-wrap: wrap; gap: 10px;
+  }
+  .wordmark { display: flex; align-items: baseline; gap: 12px; }
+  .wordmark .bn {
+    font-family: var(--bangla); font-weight: 800; font-size: 30px; line-height: 1;
+    color: var(--ink);
+  }
+  .wordmark .en {
+    font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 600;
+  }
+  .privacy {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--ink-soft);
+  }
+  .privacy .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--bottle); flex: none;
+    box-shadow: 0 0 0 3px rgba(0,105,62,.14);
+  }
+
+  /* ---------- specimen (signature element) ---------- */
+  .specimen {
+    margin: 44px 0 10px;
+  }
+  .specimen .label {
+    font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 600; margin-bottom: 14px;
+  }
+  .spec-row {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: 20px;
+  }
+  .spec-src {
+    font-family: var(--mono); font-size: clamp(15px, 2.6vw, 21px);
+    color: var(--ink-soft); text-align: right; word-break: break-all;
+  }
+  .spec-arrow {
+    color: var(--bottle); font-size: 20px; user-select: none;
+    border: 1px solid var(--line); border-radius: 50%;
+    width: 40px; height: 40px; display: grid; place-items: center;
+    background: var(--card);
+  }
+  .spec-out {
+    font-family: var(--bangla); font-weight: 700;
+    font-size: clamp(24px, 4.6vw, 40px); line-height: 1.35;
+    color: var(--ink);
+  }
+  .spec-fade { transition: opacity .45s ease; }
+  .spec-hint { margin-top: 10px; font-size: 12.5px; color: var(--ink-soft); }
+  .spec-hint button {
+    background: none; border: none; color: var(--bottle); font: inherit;
+    font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (max-width: 620px) {
+    .spec-row { grid-template-columns: 1fr; gap: 8px; }
+    .spec-src { text-align: left; }
+    .spec-arrow { width: 32px; height: 32px; font-size: 15px; transform: rotate(90deg); }
+  }
+
+  /* ---------- dropzone ---------- */
+  .dropzone {
+    margin-top: 36px;
+    border: 1.5px dashed var(--line);
+    background: var(--card);
+    border-radius: 14px;
+    padding: 44px 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    outline: none;
+  }
+  .dropzone:hover, .dropzone:focus-visible { border-color: var(--bottle); }
+  .dropzone:focus-visible { box-shadow: 0 0 0 3px rgba(0,105,62,.18); }
+  .dropzone.dragover { border-color: var(--bottle); background: #F0F6F2; }
+  .dz-title { font-size: 18px; font-weight: 600; }
+  .dz-sub { margin-top: 6px; color: var(--ink-soft); font-size: 13.5px; }
+  .dz-formats {
+    margin-top: 16px; display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  }
+  .dz-formats span {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: 5px; padding: 2px 8px;
+    background: var(--paper);
+  }
+  .options { margin-top: 14px; display: flex; justify-content: center; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 13px; color: var(--ink-soft); cursor: pointer; user-select: none;
+  }
+  .toggle input { accent-color: var(--bottle); width: 15px; height: 15px; cursor: pointer; }
+
+  /* ---------- file results ---------- */
+  .queue { margin-top: 26px; display: grid; gap: 12px; }
+  .fcard {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .fcard-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .fname { font-weight: 600; font-size: 14.5px; word-break: break-all; flex: 1; min-width: 180px; }
+  .fstage { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .fbar {
+    margin-top: 12px; height: 3px; background: var(--line-soft); border-radius: 2px; overflow: hidden;
+  }
+  .fbar i {
+    display: block; height: 100%; width: 0%;
+    background: var(--bottle); transition: width .25s ease;
+  }
+  .fcard.done .fbar i { background: var(--bottle); }
+  .fcard.error .fbar i { background: var(--lal); }
+  .fmsg { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
+  .fmsg.err { color: var(--lal); }
+  .factions { margin-top: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bottle); color: #fff; border: none; border-radius: 8px;
+    font: 600 13.5px var(--ui); padding: 9px 16px; cursor: pointer;
+    text-decoration: none;
+    transition: background .15s ease;
+  }
+  .btn:hover { background: var(--bottle-deep); }
+  .btn:focus-visible { outline: 2px solid var(--bottle-deep); outline-offset: 2px; }
+  .leftovers { margin-top: 12px; }
+  .leftovers .lo-label {
+    font-size: 12px; color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .lo-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lo-chips span {
+    font-family: var(--mono); font-size: 11.5px;
+    border: 1px solid #EED3C6; background: #FBF3EC; color: #8A4A1F;
+    border-radius: 5px; padding: 2px 7px;
+  }
+
+  /* ---------- paste converter ---------- */
+  .section-h {
+    margin: 56px 0 6px; display: flex; align-items: baseline; gap: 12px;
+  }
+  .section-h h2 { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+  .section-h .rule { flex: 1; height: 1px; background: var(--line); }
+  .section-sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 16px; }
+  .paste-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) { .paste-grid { grid-template-columns: 1fr; } }
+  .pane { display: flex; flex-direction: column; }
+  .pane-label {
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    font-weight: 600; color: var(--ink-soft); margin-bottom: 7px;
+  }
+  textarea {
+    font-family: var(--mono); font-size: 14px; line-height: 1.6;
+    background: var(--card); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; min-height: 170px; resize: vertical; outline: none;
+  }
+  textarea:focus-visible { border-color: var(--bottle); box-shadow: 0 0 0 3px rgba(0,105,62,.14); }
+  .out-box {
+    font-family: var(--bangla); font-size: 19px; line-height: 1.9;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; min-height: 170px; white-space: pre-wrap; word-break: break-word;
+  }
+  .out-box.empty { color: #A9AFA9; font-family: var(--ui); font-size: 13.5px; }
+  .pane-foot { margin-top: 8px; display: flex; justify-content: flex-end; }
+  .mini-btn {
+    background: none; border: 1px solid var(--line); border-radius: 7px;
+    font: 500 12.5px var(--ui); color: var(--ink-soft);
+    padding: 5px 12px; cursor: pointer;
+  }
+  .mini-btn:hover { border-color: var(--bottle); color: var(--bottle); }
+
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--ink-soft); display: grid; gap: 6px;
+  }
+  footer a { color: var(--bottle); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="wordmark">
+      <span class="bn">অক্ষর</span>
+      <span class="en">Okkhor · Bijoy → Unicode</span>
+    </div>
+    <span class="privacy"><span class="dot" aria-hidden="true"></span>Runs entirely in this tab — files are never uploaded</span>
+  </header>
+
+  <section class="specimen" aria-label="Conversion example">
+    <div class="label">What this does</div>
+    <div class="spec-row">
+      <div class="spec-src spec-fade" id="specSrc"></div>
+      <div class="spec-arrow" aria-hidden="true">→</div>
+      <div class="spec-out spec-fade" id="specOut" lang="bn"></div>
+    </div>
+    <p class="spec-hint">Legacy ANSI text (SutonnyMJ and other Bijoy fonts) becomes real Unicode Bangla.
+      <button type="button" id="specTry">Try this sample below</button></p>
+  </section>
+
+  <div class="dropzone" id="dropzone" role="button" tabindex="0"
+       aria-label="Drop Word files here or press Enter to choose files">
+    <div class="dz-title">Drop your Word files here</div>
+    <div class="dz-sub">or click to choose — you can add several at once</div>
+    <div class="dz-formats">
+      <span>.docx</span><span>.doc</span><span>.rtf</span><span>.odt</span><span>.html</span><span>.txt</span>
+    </div>
+  </div>
+  <div class="options">
+    <label class="toggle">
+      <input type="checkbox" id="forceToggle">
+      Convert all text, even runs not tagged with a Bijoy font
+    </label>
+  </div>
+  <input type="file" id="fileInput" multiple hidden
+         accept=".docx,.rtf,.odt,.html,.htm,.txt,.doc">
+
+  <div class="queue" id="queue" aria-live="polite"></div>
+
+  <div class="section-h"><h2>Quick paste</h2><div class="rule"></div></div>
+  <p class="section-sub">Paste Bijoy ANSI text for an instant conversion — updates as you type.</p>
+  <div class="paste-grid">
+    <div class="pane">
+      <div class="pane-label">Bijoy ANSI in</div>
+      <textarea id="pasteIn" spellcheck="false"
+        placeholder="Avwg evsjvq Mvb MvB…"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-label">Unicode Bangla out</div>
+      <div class="out-box empty" id="pasteOut" lang="bn">Converted text appears here.</div>
+      <div class="pane-foot">
+        <button class="mini-btn" id="copyBtn" type="button" hidden>Copy Unicode text</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Converted files keep their formatting; Bijoy font tags are re-pointed to a Unicode Bangla font (Nikosh). Install <strong>Nikosh</strong>, or switch the font to Kalpurush / Noto Sans Bengali in Word.</div>
+    <div>Binary <span style="font-family:var(--mono)">.doc</span> files are parsed directly in the browser — OLE container, piece table, character and paragraph formatting, and the font table — then rebuilt as a fresh <span style="font-family:var(--mono)">.docx</span> with the same font-aware Bijoy detection as .docx input. Bold, italic, underline, sizes, alignment, images, and tables all survive — including inline pictures, floating shapes, vector diagrams (EMF/WMF, decompressed in the browser), and real table grids with original column widths and borders. Merged cells are the one remaining gap: they come through as separate cells.</div>
+    <div>Conversion engine adapted from <a href="https://github.com/JehadurRE/Bijoy2Unicode" target="_blank" rel="noopener">bijoy2unicode</a> by Md.&nbsp;Jehad (MIT).</div>
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* Bijoy-to-Unicode engine, bundled from bijoy2unicode v1.0.2 (MIT, Md. Jehad / JehadurRE, github.com/JehadurRE/Bijoy2Unicode) */
+window.BijoyEngine = (function(){
+
+
+// src/docx.ts
+
+// src/core.ts
+var buildMap = (raw) => Object.entries(raw).map(([k, v]) => [
+  new RegExp(escapeForRegex(k), "g"),
+  v
+]);
+function escapeForRegex(literal) {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+var preConversionMap = buildMap({
+  "  ": " ",
+  yy: "y",
+  vv: "v",
+  "\xAD\xAD": "\xAD",
+  "y&": "y",
+  "\u201E&": "\u201E",
+  "\u2021u": "u\u2021",
+  wu: "uw",
+  " ,": ",",
+  " |": "|",
+  "\\ ": "",
+  " \\": "",
+  "\\": "",
+  "\n ": "\n",
+  " \n": "\n",
+  "\n\n\n\n\n": "\n\n",
+  "\n\n\n\n": "\n\n",
+  "\n\n\n": "\n\n"
+});
+var conversionMap = buildMap({
+  // ---- Multi-character sequences first ----
+  // These must run before the single-byte mappings below, otherwise the
+  // single-byte mapping on the second char of a sequence would consume
+  // it (e.g. `iæ` → `রু` must match before `æ` → `ু`).
+  // Some entries are inherited from earlier converters; many are original
+  // additions for real-world Sutonny MJ documents.
+  "i\xE6": "\u09B0\u09C1",
+  "i\u201C": "\u09B0\u09C1",
+  // ru with smart-quote variant
+  "i\u0192": "\u09B0\u09C2",
+  // rū
+  "M\xF8": "\u0997\u09CD\u09B2",
+  "\u201DQ\xA6": "\u099A\u09CD\u099B\u09CD\u09AC",
+  "c\xF8": "\u09AA\u09CD\u09B2",
+  "e\xF8": "\u09AC\u09CD\u09B2",
+  "k\xF8": "\u09B6\u09CD\u09B2",
+  "\xA4\xF8": "\u09AE\u09CD\u09B2",
+  "\xAF\xF8": "\u09B8\u09CD\u09B2",
+  "\xE5\u201C": "\u09AD\u09CD\u09B0\u09C1",
+  // 'Í' (U+00CD) is a Sutonny MJ alternate for '—' (em-dash) used in
+  // ন্ত / স্ত / ক্ত style conjuncts. Map every prefix-pair first, then the
+  // remaining bare 'Í' falls through to the single-byte map below.
+  "\xAF\xCD": "\u09B8\u09CD\u09A4",
+  // ¯Í -> স্ত
+  "\u0161\xCD": "\u09A8\u09CD\u09A4",
+  // šÍ -> ন্ত
+  "\xAF\xCD\xA1": "\u09B8\u09CD\u09A4\u09CD\u09AC",
+  // ¯Í¡ -> স্ত্ব
+  "\u0161\xCD\xA1": "\u09A8\u09CD\u09A4\u09CD\u09AC",
+  // šÍ¡ -> ন্ত্ব
+  "\xCB\xA1": "\u09A4\u09CD\u09A4\u09CD\u09AC",
+  // Ë¡ overrides the single-byte Ë mapping
+  "\\\\": "\u0965",
+  // ---- Vowels (Av must come before A) ----
+  Av: "\u0986",
+  A: "\u0985",
+  B: "\u0987",
+  C: "\u0988",
+  D: "\u0989",
+  E: "\u098A",
+  F: "\u098B",
+  G: "\u098F",
+  H: "\u0990",
+  I: "\u0993",
+  J: "\u0994",
+  // Consonants
+  K: "\u0995",
+  L: "\u0996",
+  M: "\u0997",
+  N: "\u0998",
+  O: "\u0999",
+  P: "\u099A",
+  Q: "\u099B",
+  R: "\u099C",
+  S: "\u099D",
+  T: "\u099E",
+  U: "\u099F",
+  V: "\u09A0",
+  W: "\u09A1",
+  X: "\u09A2",
+  Y: "\u09A3",
+  Z: "\u09A4",
+  _: "\u09A5",
+  "`": "\u09A6",
+  a: "\u09A7",
+  b: "\u09A8",
+  c: "\u09AA",
+  d: "\u09AB",
+  e: "\u09AC",
+  f: "\u09AD",
+  g: "\u09AE",
+  h: "\u09AF",
+  i: "\u09B0",
+  j: "\u09B2",
+  k: "\u09B6",
+  l: "\u09B7",
+  m: "\u09B8",
+  n: "\u09B9",
+  o: "\u09DC",
+  // ড় (precomposed)
+  p: "\u09DD",
+  // ঢ় (precomposed)
+  q: "\u09DF",
+  // য় (precomposed)
+  r: "\u09CE",
+  s: "\u0982",
+  t: "\u0983",
+  u: "\u0981",
+  // Numbers
+  "0": "\u09E6",
+  "1": "\u09E7",
+  "2": "\u09E8",
+  "3": "\u09E9",
+  "4": "\u09EA",
+  "5": "\u09EB",
+  "6": "\u09EC",
+  "7": "\u09ED",
+  "8": "\u09EE",
+  "9": "\u09EF",
+  // Kars
+  "\u2022": "\u0999\u09CD",
+  v: "\u09BE",
+  w: "\u09BF",
+  x: "\u09C0",
+  y: "\u09C1",
+  z: "\u09C1",
+  "\u201C": "\u09C1",
+  "\u2013": "\u09C1",
+  "~": "\u09C2",
+  "\u0192": "\u09C2",
+  "\u201A": "\u09C2",
+  "\u201E\u201E": "\u09C3",
+  "\u201E": "\u09C3",
+  "\u2026": "\u09C3",
+  "\u2020": "\u09C7",
+  "\u2021": "\u09C7",
+  "\u02C6": "\u09C8",
+  "\u2030": "\u09C8",
+  "\u0160": "\u09D7",
+  "|": "\u0964",
+  "&": "\u09CD\u200C",
+  // Conjuncts
+  "^": "\u09CD\u09AC",
+  "\u2018": "\u09CD\u09A4\u09C1",
+  "\u2019": "\u09CD\u09A5",
+  "\u2039": "\u09CD\u0995",
+  "\u0152": "\u09CD\u0995\u09CD\u09B0",
+  "\u201D": "\u099A\u09CD",
+  "\u2014": "\u09CD\u09A4",
+  "\u02DC": "\u09A6\u09CD",
+  "\u2122": "\u09A6\u09CD",
+  "\u0161": "\u09A8\u09CD",
+  "\u203A": "\u09A8\u09CD",
+  "\u0153": "\u09CD\u09A8",
+  "\u0178": "\u09CD\u09AC",
+  "\xA1": "\u09CD\u09AC",
+  "\xA2": "\u09CD\u09AD",
+  "\xA3": "\u09CD\u09AD\u09CD\u09B0",
+  "\xA4": "\u09AE\u09CD",
+  "\xA5": "\u09CD\u09AE",
+  "\xA6": "\u09CD\u09AC",
+  "\xA7": "\u09CD\u09AE",
+  "\xA8": "\u09CD\u09AF",
+  "\xA9": "\u09B0\u09CD",
+  "\xAA": "\u09CD\u09B0",
+  "\xAB": "\u09CD\u09B0",
+  "\xAC": "\u09CD\u09B2",
+  "\xAD": "\u09CD\u09B2",
+  "\xAE": "\u09B7\u09CD",
+  "\xAF": "\u09B8\u09CD",
+  "\xB0": "\u0995\u09CD\u0995",
+  "\xB1": "\u0995\u09CD\u099F",
+  "\xB2": "\u0995\u09CD\u09B7\u09CD\u09A3",
+  "\xB3": "\u0995\u09CD\u09A4",
+  "\xB4": "\u0995\u09CD\u09AE",
+  "\xB5": "\u0995\u09CD\u09B0",
+  "\xB6": "\u0995\u09CD\u09B7",
+  "\xB7": "\u0995\u09CD\u09B8",
+  "\xB8": "\u0997\u09C1",
+  "\xB9": "\u099C\u09CD\u099E",
+  "\xBA": "\u0997\u09CD\u09A6",
+  "\xBB": "\u0997\u09CD\u09A7",
+  "\xBC": "\u0999\u09CD\u0995",
+  "\xBD": "\u0999\u09CD\u0997",
+  "\xBE": "\u099C\u09CD\u099C",
+  "\xBF": "\u09CD\u09A4\u09CD\u09B0",
+  "\xC0": "\u099C\u09CD\u099D",
+  "\xC1": "\u099C\u09CD\u099E",
+  "\xC2": "\u099E\u09CD\u099A",
+  "\xC3": "\u099E\u09CD\u099B",
+  "\xC4": "\u099E\u09CD\u099C",
+  "\xC5": "\u099E\u09CD\u099D",
+  "\xC6": "\u099F\u09CD\u099F",
+  "\xC7": "\u09A1\u09CD\u09A1",
+  "\xC8": "\u09A3\u09CD\u099F",
+  "\xC9": "\u09A3\u09CD\u09A0",
+  "\xCA": "\u09A3\u09CD\u09A1",
+  "\xCB": "\u09A4\u09CD\u09A4",
+  "\xCC": "\u09A4\u09CD\u09A5",
+  "\xCD": "\u09A4\u09CD\u09AE",
+  "\xCE": "\u09A4\u09CD\u09B0",
+  "\xCF": "\u09A6\u09CD\u09A6",
+  "\xD0": "-",
+  "\xD1": "-",
+  "\xD2": '"',
+  "\xD3": '"',
+  "\xD4": "'",
+  "\xD5": "'",
+  "\xD6": "\u09CD\u09B0",
+  "\xD7": "\u09A6\u09CD\u09A7",
+  "\xD8": "\u09A6\u09CD\u09AC",
+  "\xD9": "\u09A6\u09CD\u09AE",
+  "\xDA": "\u09A8\u09CD\u09A0",
+  "\xDB": "\u09A8\u09CD\u09A1",
+  "\xDC": "\u09A8\u09CD\u09A7",
+  "\xDD": "\u09A8\u09CD\u09B8",
+  "\xDE": "\u09AA\u09CD\u099F",
+  "\xDF": "\u09AA\u09CD\u09A4",
+  "\xE0": "\u09AA\u09CD\u09AA",
+  "\xE1": "\u09AA\u09CD\u09B8",
+  "\xE2": "\u09AC\u09CD\u099C",
+  "\xE3": "\u09AC\u09CD\u09A6",
+  "\xE4": "\u09AC\u09CD\u09A7",
+  "\xE5": "\u09AD\u09CD\u09B0",
+  "\xE6": "\u09C1",
+  // æ — u-kar variant (matches Sutonny MJ usage and bnwebtools).
+  // The rare ম্ন conjunct uses other byte sequences (e.g. gœ).
+  "\xE7": "\u09AE\u09CD\u09AB",
+  "\xE8": "\u09CD\u09A8",
+  "\xE9": "\u09B2\u09CD\u0995",
+  "\xEA": "\u09B2\u09CD\u0997",
+  "\xEB": "\u09B2\u09CD\u099F",
+  "\xEC": "\u09B2\u09CD\u09A1",
+  "\xED": "\u09B2\u09CD\u09AA",
+  "\xEE": "\u09B2\u09CD\u09AB",
+  "\xEF": "\u09B6\u09C1",
+  "\xF0": "\u09B6\u09CD\u099A",
+  "\xF1": "\u09B6\u09CD\u099B",
+  "\xF2": "\u09B7\u09CD\u09A3",
+  "\xF3": "\u09B7\u09CD\u099F",
+  "\xF4": "\u09B7\u09CD\u09A0",
+  "\xF5": "\u09B7\u09CD\u09AB",
+  "\xF6": "\u09B8\u09CD\u0996",
+  "\xF7": "\u09B8\u09CD\u099F",
+  "\xF8": "\u09B8\u09CD\u09A8",
+  "\xF9": "\u09B8\u09CD\u09AB",
+  "\xFA": "\u09CD\u09AA",
+  "\xFB": "\u09B9\u09C1",
+  "\xFC": "\u09B9\u09C3",
+  "\xFD": "\u09B9\u09CD\u09A8",
+  "\xFE": "\u09B9\u09CD\u09AE",
+  // ---- Additional real-world Bijoy / Sutonny MJ encodings (alternate `ÿ`,
+  // etc.). Single-byte additions only — multi-char sequences are at the top
+  // of this map.
+  "\xFF": "\u0995\u09CD\u09B7"
+  // ÿ alternate code for ক্ষ (kkho)
+});
+var proConversionMap = buildMap({
+  "\u09CD\u09CD": "\u09CD"
+});
+var postConversionMap = buildMap({
+  "\u09E6\u0983": "\u09E6:",
+  "\u09E7\u0983": "\u09E7:",
+  "\u09E8\u0983": "\u09E8:",
+  "\u09E9\u0983": "\u09E9:",
+  "\u09EA\u0983": "\u09EA:",
+  "\u09EB\u0983": "\u09EB:",
+  "\u09EC\u0983": "\u09EC:",
+  "\u09ED\u0983": "\u09ED:",
+  "\u09EE\u0983": "\u09EE:",
+  "\u09EF\u0983": "\u09EF:",
+  " \u0983": ":",
+  "\n\u0983": "\n:",
+  "]\u0983": "]:",
+  "[\u0983": "[:",
+  "  ": " ",
+  "\u0985\u09BE": "\u0986",
+  "\u09CD\u200C\u09CD\u200C": "\u09CD\u200C"
+});
+function applyMap(text, map) {
+  let out = text;
+  for (const [pattern, replacement] of map) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+var HALANT = "\u09CD";
+function isBanglaPreKar(c) {
+  return c === "\u09BF" || c === "\u09C8" || c === "\u09C7";
+}
+function isBanglaPostKar(c) {
+  return c === "\u09BE" || c === "\u09CB" || c === "\u09CC" || c === "\u09D7" || c === "\u09C1" || c === "\u09C2" || c === "\u09C0" || c === "\u09C3";
+}
+function isBanglaKar(c) {
+  return isBanglaPreKar(c) || isBanglaPostKar(c);
+}
+function isBanglaBanjonborno(c) {
+  if (!c) return false;
+  return "\u0995\u0996\u0997\u0998\u0999\u099A\u099B\u099C\u099D\u099E\u099F\u09A0\u09A1\u09A2\u09A3\u09A4\u09A5\u09A6\u09A7\u09A8\u09AA\u09AB\u09AC\u09AD\u09AE\u09AF\u09B0\u09B2\u09B6\u09B7\u09B8\u09B9".includes(c) || c === "\u09A1\u09BC" || // U+09DC
+  c === "\u09A2\u09BC" || // U+09DD
+  c === "\u09AF\u09BC" || // U+09DF
+  c === "\u09CE" || c === "\u0982" || c === "\u0983" || c === "\u0981";
+}
+function isBanglaNukta(c) {
+  return c === "\u0981";
+}
+function isBanglaHalant(c) {
+  return c === HALANT;
+}
+function isSpace(c) {
+  return c === " " || c === "	" || c === "\n" || c === "\r";
+}
+function charAt(s, i) {
+  if (i < 0 || i >= s.length) return "";
+  return s.charAt(i);
+}
+function rearrange(input) {
+  let str = input;
+  let i = 0;
+  while (i < str.length) {
+    if (i < str.length - 1 && charAt(str, i) === "\u09B0" && isBanglaHalant(charAt(str, i + 1)) && isBanglaHalant(charAt(str, i - 1))) {
+      let j = 1;
+      while (true) {
+        if (i - j < 0) break;
+        if (isBanglaBanjonborno(charAt(str, i - j)) && isBanglaHalant(charAt(str, i - j - 1))) {
+          j += 2;
+        } else if (j === 1 && isBanglaKar(charAt(str, i - j))) {
+          j += 1;
+        } else {
+          break;
+        }
+      }
+      str = str.slice(0, i - j) + charAt(str, i) + charAt(str, i + 1) + str.slice(i - j, i) + str.slice(i + 2);
+      i += 1;
+      continue;
+    }
+    i += 1;
+  }
+  i = 0;
+  while (i < str.length - 1) {
+    if (charAt(str, i) === "\u09B0" && isBanglaHalant(charAt(str, i + 1)) && i > 0 && // Previous char must be a banjonborno that does NOT itself form a
+    // halanted conjunct head (otherwise it's `র + ্ + halant` and the
+    // first pass already handled it).
+    isBanglaBanjonborno(charAt(str, i - 1)) && !isBanglaHalant(charAt(str, i - 2)) && // The reph must be at end of cluster — meaning the next char after
+    // the halant must NOT be the start of a new halanted conjunct.
+    // Specifically, block only if (i+2, i+3) is consonant + halant —
+    // that pattern means the reph is genuinely in the middle of a
+    // multi-consonant cluster and should be left alone.
+    !(isBanglaBanjonborno(charAt(str, i + 2)) && isBanglaHalant(charAt(str, i + 3)))) {
+      let j = 1;
+      while (true) {
+        if (i - j - 1 < 0) break;
+        if (isBanglaBanjonborno(charAt(str, i - j - 1)) && isBanglaHalant(charAt(str, i - j))) {
+          j += 2;
+        } else {
+          break;
+        }
+      }
+      str = str.slice(0, i - j) + charAt(str, i) + // র
+      charAt(str, i + 1) + // halant
+      str.slice(i - j, i) + // the cluster
+      str.slice(i + 2);
+      i += 2;
+      continue;
+    }
+    i += 1;
+  }
+  str = applyMap(str, proConversionMap);
+  i = 0;
+  while (i < str.length) {
+    if (i < str.length - 1 && charAt(str, i) === "\u09B0" && isBanglaHalant(charAt(str, i + 1)) && !isBanglaHalant(charAt(str, i - 1)) && isBanglaHalant(charAt(str, i + 2))) {
+      let j = 1;
+      while (true) {
+        if (i - j < 0) break;
+        if (isBanglaBanjonborno(charAt(str, i - j)) && isBanglaHalant(charAt(str, i - j - 1))) {
+          j += 2;
+        } else if (j === 1 && isBanglaKar(charAt(str, i - j))) {
+          j += 1;
+        } else {
+          break;
+        }
+      }
+      str = str.slice(0, i - j) + charAt(str, i) + charAt(str, i + 1) + str.slice(i - j, i) + str.slice(i + 2);
+      i += 1;
+      continue;
+    }
+    if (i > 0 && charAt(str, i) === HALANT && (isBanglaKar(charAt(str, i - 1)) || isBanglaNukta(charAt(str, i - 1))) && i < str.length - 1) {
+      str = str.slice(0, i - 1) + charAt(str, i) + charAt(str, i + 1) + charAt(str, i - 1) + str.slice(i + 2);
+    }
+    if (i > 0 && i < str.length - 1 && charAt(str, i) === HALANT && charAt(str, i - 1) === "\u09B0" && charAt(str, i - 2) !== HALANT && isBanglaKar(charAt(str, i + 1))) {
+      str = str.slice(0, i - 1) + charAt(str, i + 1) + charAt(str, i - 1) + charAt(str, i) + str.slice(i + 2);
+    }
+    if (i < str.length - 1 && isBanglaPreKar(charAt(str, i)) && !isSpace(charAt(str, i + 1))) {
+      let temp = str.slice(0, i);
+      let j = 1;
+      while (i + j < str.length - 1 && isBanglaBanjonborno(charAt(str, i + j))) {
+        if (i + j < str.length && isBanglaHalant(charAt(str, i + j + 1))) {
+          j += 2;
+        } else {
+          break;
+        }
+      }
+      temp += str.slice(i + 1, i + j + 1);
+      let l = 0;
+      if (charAt(str, i) === "\u09C7" && charAt(str, i + j + 1) === "\u09BE") {
+        temp += "\u09CB";
+        l = 1;
+      } else if (charAt(str, i) === "\u09C7" && charAt(str, i + j + 1) === "\u09D7") {
+        temp += "\u09CC";
+        l = 1;
+      } else {
+        temp += charAt(str, i);
+      }
+      temp += str.slice(i + j + l + 1);
+      str = temp;
+      i += j;
+    }
+    if (i < str.length - 1 && isBanglaNukta(charAt(str, i)) && isBanglaPostKar(charAt(str, i + 1))) {
+      str = str.slice(0, i) + charAt(str, i + 1) + charAt(str, i) + str.slice(i + 2);
+    }
+    i += 1;
+  }
+  return str;
+}
+function convertBijoyToUnicode(src) {
+  if (!src) return src;
+  let out = applyMap(src, preConversionMap);
+  out = applyMap(out, conversionMap);
+  out = rearrange(out);
+  out = applyMap(out, postConversionMap);
+  return out;
+}
+function looksLikeBijoy(text) {
+  if (!text) return false;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code >= 128 && code <= 591) return true;
+    if (code >= 8208 && code <= 8250) return true;
+  }
+  return false;
+}
+function hasBengaliUnicode(text) {
+  if (!text) return false;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code >= 2432 && code <= 2559) return true;
+  }
+  return false;
+}
+
+// src/docx.ts
+function decodeXmlText(s) {
+  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+}
+function encodeXmlText(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+var BIJOY_FONT_PATTERNS = [
+  /Sutonny\s*MJ/i,
+  /SutonnyMJ/i,
+  /SutonnyOMJ/i,
+  /Sutonny\s*OMJ/i,
+  /Sutonny\s*XMJ/i,
+  /SutonnyXMJ/i,
+  /Sulekha[a-z\s]*/i,
+  /Boishakhi/i,
+  /Lekhoni/i,
+  /BijoyEkattor/i,
+  /Bijoy[a-z0-9 ]*MJ/i,
+  /[A-Za-z]+MJ\b/i,
+  /\bMJ\s+[A-Za-z]+/i
+];
+var UNICODE_FONT_PATTERNS = [
+  /Nikosh/i,
+  /SolaimanLipi/i,
+  /Solaiman\s*Lipi/i,
+  /Kalpurush/i,
+  /Siyam\s*Rupali/i,
+  /Mukti/i,
+  /Vrinda/i,
+  /Shonar\s*Bangla/i,
+  /Hind\s*Siliguri/i,
+  /Noto\s*Sans\s*Bengali/i,
+  /Noto\s*Serif\s*Bengali/i,
+  /AdorshoLipi/i
+];
+var LATIN_FONT_PATTERNS = [
+  /^Calibri$/i,
+  /^Cambria$/i,
+  /Times\s*New\s*Roman/i,
+  /^Arial$/i,
+  /Arial\s*Unicode\s*MS/i,
+  /^Tahoma$/i,
+  /^Verdana$/i,
+  /^Georgia$/i,
+  /^Helvetica$/i,
+  /^Segoe\s*UI/i,
+  /^Trebuchet\s*MS$/i,
+  /^Courier\s*New$/i,
+  /^Consolas$/i,
+  /^Liberation/i
+];
+function fontIsLatin(name) {
+  if (!name) return false;
+  return LATIN_FONT_PATTERNS.some((p) => p.test(name));
+}
+function fontIsBijoyName(name) {
+  if (!name) return false;
+  return BIJOY_FONT_PATTERNS.some((p) => p.test(name));
+}
+function fontIsUnicodeBangla(name) {
+  if (!name) return false;
+  return UNICODE_FONT_PATTERNS.some((p) => p.test(name));
+}
+var UNICODE_FONT = "Nikosh";
+var ALL_FONT_REGEX = (() => {
+  const sources = BIJOY_FONT_PATTERNS.map((r) => r.source);
+  return new RegExp(`(${sources.join("|")})`, "gi");
+})();
+function swapBijoyFontInBlock(s) {
+  return s.replace(ALL_FONT_REGEX, UNICODE_FONT);
+}
+var BIJOY_BIGRAMS = /* @__PURE__ */ new Set([
+  "wA",
+  "wB",
+  "wC",
+  "wD",
+  "wE",
+  "wF",
+  "wG",
+  "wH",
+  "wI",
+  "wJ",
+  "wK",
+  "wL",
+  "wM",
+  "wN",
+  "wO",
+  "wP",
+  "wQ",
+  "wR",
+  "wS",
+  "wT",
+  "wU",
+  "wV",
+  "wW",
+  "wX",
+  "wY",
+  "wZ",
+  "wa",
+  "wb",
+  "wc",
+  "wd",
+  "wf",
+  "wg",
+  "wh",
+  "wj",
+  "wk",
+  "wl",
+  "wm",
+  "wn",
+  "wo",
+  "wp",
+  "wq",
+  "wr",
+  "wt",
+  "wv",
+  "Av",
+  "Bv",
+  "Cv",
+  "Dv",
+  "Ev",
+  "Fv",
+  "Gv",
+  "Hv",
+  "Iv",
+  "Jv",
+  "Kv",
+  "Lv",
+  "Mv",
+  "Nv",
+  "Ov",
+  "Pv",
+  "Qv",
+  "Sv",
+  "Tv",
+  "Uv",
+  "Vv",
+  "Wv",
+  "Xv",
+  "Yv",
+  "Zv",
+  "_v",
+  "av",
+  "bv",
+  "cv",
+  "dv",
+  "ev",
+  "fv",
+  "gv",
+  "hv",
+  "iv",
+  "jv",
+  "kv",
+  "lv",
+  "mv",
+  "nv",
+  "ov",
+  "pv",
+  "qv",
+  "rv",
+  "tv",
+  "Mz",
+  "M\xAA",
+  "M\u0161",
+  "K\xAA",
+  "P\xAA",
+  "Z\xAA",
+  "\xA9K",
+  "\xA9M",
+  "\xA9Z",
+  "\xA9c",
+  "\xA9e",
+  "\xA9g",
+  "\xA9h",
+  "\xA9i",
+  "\xA9k",
+  "\xA9l",
+  "\xA9m",
+  "\xD1",
+  "\u0152",
+  "\u2039",
+  "\u2021",
+  "\xAA",
+  "\xD6",
+  "\u0160",
+  "eK",
+  "eL",
+  "eM",
+  "eN",
+  "eP",
+  "eQ",
+  "eR",
+  "eS",
+  "eT",
+  "eU",
+  "eV",
+  "eW",
+  "eX",
+  "eY",
+  "eZ"
+]);
+function countBijoyBigrams(s) {
+  let n = 0;
+  for (let i = 0; i < s.length - 1; i++) {
+    if (BIJOY_BIGRAMS.has(s.slice(i, i + 2))) n++;
+  }
+  return n;
+}
+function hasBijoyBigram(s) {
+  return countBijoyBigrams(s) > 0;
+}
+var ENGLISH_HINT_WORDS = /* @__PURE__ */ new Set([
+  "the",
+  "of",
+  "and",
+  "to",
+  "in",
+  "is",
+  "was",
+  "are",
+  "be",
+  "by",
+  "for",
+  "on",
+  "at",
+  "with",
+  "from",
+  "this",
+  "that",
+  "as",
+  "or",
+  "if",
+  "an",
+  "a",
+  "it",
+  "its",
+  "but",
+  "not",
+  "you",
+  "your",
+  "my",
+  "our",
+  "their",
+  "they",
+  "i",
+  "we",
+  "name",
+  "date",
+  "age",
+  "year",
+  "month",
+  "day",
+  "sir",
+  "madam",
+  "mr",
+  "mrs",
+  "ms",
+  "dr",
+  "prof",
+  "mister",
+  "born",
+  "father",
+  "mother",
+  "spouse",
+  "son",
+  "daughter",
+  "family",
+  "address",
+  "village",
+  "district",
+  "thana",
+  "upazila",
+  "division",
+  "country",
+  "email",
+  "phone",
+  "mobile",
+  "cell",
+  "office",
+  "home",
+  "present",
+  "permanent",
+  "yes",
+  "no",
+  "male",
+  "female",
+  "married",
+  "unmarried",
+  "single",
+  "total",
+  "page",
+  "education",
+  "school",
+  "college",
+  "university",
+  "degree",
+  "class",
+  "subject",
+  "department",
+  "branch",
+  "designation",
+  "post",
+  "position",
+  "rank",
+  "grade",
+  "officer",
+  "officers",
+  "service",
+  "duty",
+  "duties",
+  "joining",
+  "retirement",
+  "passport",
+  "number",
+  "reg",
+  "regd",
+  "cert",
+  "certificate",
+  "training",
+  "experience",
+  "english",
+  "bangla",
+  "bengali",
+  "national",
+  "government",
+  "ministry",
+  "secretariat",
+  "honorable",
+  "honourable",
+  "please",
+  "kindly",
+  "thank",
+  "thanks",
+  "regards",
+  "yours",
+  "faithfully",
+  "sincerely",
+  "whatsapp",
+  "telephone",
+  "bio",
+  "data",
+  "cv",
+  "resume",
+  "photo",
+  "total",
+  "sl",
+  "sn",
+  "ref",
+  "subject",
+  "ddg",
+  "adg",
+  "ig",
+  "sp",
+  "asp",
+  "gen",
+  "brig",
+  "col",
+  "lt",
+  "capt",
+  "major",
+  "maj",
+  "cmdr",
+  "cmdt"
+]);
+function looksLikeEnglish(text) {
+  const t = text.trim();
+  if (!t) return false;
+  if (/`/.test(t)) return false;
+  if (/[~^][A-Za-z]/.test(t)) return false;
+  if (/[A-Za-z]&/.test(t)) return false;
+  if (/\d[A-Za-z]/.test(t)) return false;
+  if (hasBijoyBigram(t)) return false;
+  if (/[bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ]{3,}/.test(t)) return false;
+  const lower = t.toLowerCase();
+  const tokens = lower.match(/[a-z][a-z']*/g) || [];
+  for (const tok of tokens) if (ENGLISH_HINT_WORDS.has(tok)) return true;
+  const letters = lower.replace(/[^a-z]/g, "");
+  if (letters.length === 0) return true;
+  if (letters.length < 4) {
+    return tokens.every((tok) => ENGLISH_HINT_WORDS.has(tok));
+  }
+  let vowels = 0;
+  for (const c of letters) if ("aeiouy".includes(c)) vowels++;
+  const ratio = vowels / letters.length;
+  if (ratio < 0.35) return false;
+  let earlyVowel = false;
+  for (let i = 0; i < Math.min(4, letters.length); i++) {
+    if ("aeiouy".includes(letters[i])) {
+      earlyVowel = true;
+      break;
+    }
+  }
+  return earlyVowel;
+}
+var DOCX_PARTS = [
+  /^word\/document\.xml$/,
+  /^word\/header\d*\.xml$/,
+  /^word\/footer\d*\.xml$/,
+  /^word\/footnotes\.xml$/,
+  /^word\/endnotes\.xml$/,
+  /^word\/comments\.xml$/,
+  /^word\/glossary\/document\.xml$/
+];
+function mergeFontRef(base, override) {
+  return {
+    ascii: override.ascii ?? base.ascii,
+    hAnsi: override.hAnsi ?? base.hAnsi,
+    cs: override.cs ?? base.cs,
+    eastAsia: override.eastAsia ?? base.eastAsia
+  };
+}
+function chooseRelevantFont(font, runText) {
+  let hasNonAscii = false;
+  for (let i = 0; i < runText.length; i++) {
+    if (runText.charCodeAt(i) > 126) {
+      hasNonAscii = true;
+      break;
+    }
+  }
+  if (hasNonAscii) {
+    return font.cs ?? font.ascii ?? font.hAnsi ?? font.eastAsia;
+  }
+  return font.ascii ?? font.hAnsi ?? font.cs ?? font.eastAsia;
+}
+function fontRefIsBijoyForText(f, runText) {
+  return fontIsBijoyName(chooseRelevantFont(f, runText));
+}
+function fontRefIsUnicodeForText(f, runText) {
+  return fontIsUnicodeBangla(chooseRelevantFont(f, runText));
+}
+function parseRFonts(tag) {
+  const out = {};
+  const m = tag.match(/<w:rFonts\b([^/>]*)\/?>/);
+  if (!m) return out;
+  const attrs = m[1];
+  const grab = (name) => {
+    const am = attrs.match(new RegExp(`${name}="([^"]+)"`));
+    return am ? am[1] : void 0;
+  };
+  out.ascii = grab("w:ascii");
+  out.hAnsi = grab("w:hAnsi");
+  out.cs = grab("w:cs");
+  out.eastAsia = grab("w:eastAsia");
+  return out;
+}
+function parseStylesXml(stylesXml) {
+  const byId = /* @__PURE__ */ new Map();
+  const styleRe = /<w:style\b([^>]*)>([\s\S]*?)<\/w:style>/g;
+  let sm;
+  while (sm = styleRe.exec(stylesXml)) {
+    const attrs = sm[1];
+    const body = sm[2];
+    const idM = attrs.match(/w:styleId="([^"]+)"/);
+    if (!idM) continue;
+    const id = idM[1];
+    const basedM = body.match(/<w:basedOn\b[^>]*w:val="([^"]+)"/);
+    const fontTag = body.match(/<w:rFonts\b[^/>]*\/?>/);
+    const font = fontTag ? parseRFonts(fontTag[0]) : {};
+    byId.set(id, { id, basedOn: basedM?.[1], font });
+  }
+  let defaults = {};
+  const ddM = stylesXml.match(/<w:rPrDefault\b[^>]*>([\s\S]*?)<\/w:rPrDefault>/);
+  if (ddM) {
+    const fontTag = ddM[1].match(/<w:rFonts\b[^/>]*\/?>/);
+    if (fontTag) defaults = parseRFonts(fontTag[0]);
+  }
+  return { byId, defaults };
+}
+function resolveStyleFont(styleId, styles, defaults, visited = /* @__PURE__ */ new Set()) {
+  if (!styleId) return { ...defaults };
+  if (visited.has(styleId)) return { ...defaults };
+  visited.add(styleId);
+  const s = styles.get(styleId);
+  if (!s) return { ...defaults };
+  const base = resolveStyleFont(s.basedOn, styles, defaults, visited);
+  return mergeFontRef(base, s.font);
+}
+function runBodyText(runBody) {
+  const ts = runBody.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g) || [];
+  return ts.map((t) => decodeXmlText(t.replace(/^<w:t(?:\s[^>]*)?>|<\/w:t>$/g, ""))).join("");
+}
+function textHasBijoyMarkers(runBody) {
+  const text = runBodyText(runBody);
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c >= 128 && c <= 591) return true;
+    if (c >= 8208 && c <= 8250) return true;
+  }
+  return false;
+}
+function computeIsBijoyHeavy(xml) {
+  for (const p of BIJOY_FONT_PATTERNS) {
+    if (p.test(xml)) return true;
+  }
+  let bijoyChars = 0;
+  let totalChars = 0;
+  const tRe = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
+  let tm;
+  while (tm = tRe.exec(xml)) {
+    const inner = decodeXmlText(tm[1]);
+    totalChars += inner.length;
+    for (let i = 0; i < inner.length; i++) {
+      const c = inner.charCodeAt(i);
+      if (c >= 128 && c <= 591 || c >= 8208 && c <= 8250) {
+        bijoyChars++;
+      }
+    }
+  }
+  if (totalChars === 0) return false;
+  return bijoyChars / totalChars > 0.05;
+}
+function transformDocxXml(xml, ctx, force = false, bijoyHeavy = false) {
+  const paraRe = /(<w:p\b[^>]*>)([\s\S]*?)(<\/w:p>)/g;
+  let out = xml.replace(paraRe, (_m, pOpen, pBody, pClose) => {
+    const pPr = pBody.match(/<w:pPr\b[^>]*>([\s\S]*?)<\/w:pPr>/);
+    const paraStyleId = pPr?.[1].match(/<w:pStyle\b[^>]*w:val="([^"]+)"/)?.[1] || null;
+    const paraRPrFontTag = pPr?.[1].match(
+      /<w:rPr\b[^>]*>[\s\S]*?<w:rFonts\b[^/>]*\/?>/
+    );
+    const paraRPrFont = paraRPrFontTag ? parseRFonts(paraRPrFontTag[0].match(/<w:rFonts\b[^/>]*\/?>/)[0]) : {};
+    const paraFont = mergeFontRef(
+      resolveStyleFont(paraStyleId, ctx.styles, ctx.defaults),
+      paraRPrFont
+    );
+    const newBody = pBody.replace(
+      /(<w:r\b[^>]*>)([\s\S]*?)(<\/w:r>)/g,
+      (__, rOpen, rBody, rClose) => {
+        const rPr = rBody.match(/<w:rPr\b[^>]*>([\s\S]*?)<\/w:rPr>/);
+        const runStyleId = rPr?.[1].match(/<w:rStyle\b[^>]*w:val="([^"]+)"/)?.[1] || null;
+        const runFontTag = rPr?.[1].match(/<w:rFonts\b[^/>]*\/?>/);
+        const runFont = runFontTag ? parseRFonts(runFontTag[0]) : {};
+        const effective = mergeFontRef(
+          mergeFontRef(
+            resolveStyleFont(runStyleId, ctx.styles, ctx.defaults),
+            paraFont
+          ),
+          runFont
+        );
+        const plainText = runBodyText(rBody);
+        const isBijoy = fontRefIsBijoyForText(effective, plainText);
+        const isUnicode = fontRefIsUnicodeForText(effective, plainText);
+        const isLatin = fontIsLatin(chooseRelevantFont(effective, plainText));
+        const hasBangla = hasBengaliUnicode(plainText);
+        const letterCount = (plainText.match(/[A-Za-z]/g) || []).length;
+        const isShortLatinFragment = letterCount > 0 && letterCount <= 2;
+        const hasHighByte = textHasBijoyMarkers(rBody);
+        const hasHardBijoyMarker = hasHighByte || /`/.test(plainText);
+        const bigramCount = countBijoyBigrams(plainText);
+        const hasMultipleBigrams = bigramCount >= 2;
+        const hasSoftBijoyMarker = /\d[A-Za-z]/.test(plainText) || bigramCount >= 1;
+        let strongBijoy = hasMultipleBigrams;
+        if (!strongBijoy && bigramCount === 1 && letterCount >= 3) {
+          const lower = plainText.toLowerCase().replace(/[^a-z]/g, "");
+          let v = 0;
+          for (const c of lower) if ("aeiouy".includes(c)) v++;
+          const ratio = lower.length ? v / lower.length : 0;
+          if (ratio < 0.25) {
+            strongBijoy = true;
+          } else {
+            const tokens = lower.match(/[a-z]+/g) || [];
+            const allAlien = tokens.length > 0 && tokens.every((t) => !ENGLISH_HINT_WORDS.has(t) && t.length <= 6);
+            if (allAlien) strongBijoy = true;
+          }
+        }
+        let convert;
+        if (hasBangla) convert = false;
+        else if (hasHardBijoyMarker) convert = true;
+        else if (strongBijoy) convert = true;
+        else if (isBijoy) convert = true;
+        else if (isLatin && !isShortLatinFragment) convert = false;
+        else if (isUnicode) convert = false;
+        else if (hasSoftBijoyMarker) convert = true;
+        else if (force) convert = true;
+        else if (bijoyHeavy && !looksLikeEnglish(plainText)) convert = true;
+        else convert = false;
+        if (!convert) return rOpen + rBody + rClose;
+        const converted = rBody.replace(
+          /(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g,
+          (___, o, inner, c) => {
+            if (!inner) return o + inner + c;
+            const decoded = decodeXmlText(inner);
+            if (hasBengaliUnicode(decoded)) return o + inner + c;
+            return o + encodeXmlText(convertBijoyToUnicode(decoded)) + c;
+          }
+        ).replace(
+          /(<w:instrText(?:\s[^>]*)?>)([\s\S]*?)(<\/w:instrText>)/g,
+          (___, o, inner, c) => {
+            if (!inner) return o + inner + c;
+            const decoded = decodeXmlText(inner);
+            if (hasBengaliUnicode(decoded)) return o + inner + c;
+            return o + encodeXmlText(convertBijoyToUnicode(decoded)) + c;
+          }
+        );
+        const finalBody = swapBijoyFontInBlock(converted);
+        return rOpen + finalBody + rClose;
+      }
+    );
+    return pOpen + newBody + pClose;
+  });
+  out = out.replace(/<w:rFonts\b[^/>]*\/?>/g, (tag) => swapBijoyFontInBlock(tag));
+  return out;
+}
+async function convertDocx(file, options = {}) {
+  const { onProgress, force = false } = options;
+  onProgress?.({ stage: "Reading file", percent: 5 });
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  onProgress?.({ stage: "Parsing styles", percent: 15 });
+  let ctx = { styles: /* @__PURE__ */ new Map(), defaults: {} };
+  const stylesEntry = zip.file("word/styles.xml");
+  if (stylesEntry) {
+    const stylesXml = await stylesEntry.async("string");
+    const parsed = parseStylesXml(stylesXml);
+    ctx = { styles: parsed.byId, defaults: parsed.defaults };
+  }
+  onProgress?.({ stage: "Scanning document parts", percent: 25 });
+  let bijoyHeavy = false;
+  const mainDoc = zip.file("word/document.xml");
+  if (mainDoc) {
+    const mainXml = await mainDoc.async("string");
+    bijoyHeavy = computeIsBijoyHeavy(mainXml);
+  }
+  const names = Object.keys(zip.files).filter(
+    (n) => DOCX_PARTS.some((re) => re.test(n))
+  );
+  let processed = 0;
+  for (const name of names) {
+    const entry = zip.file(name);
+    if (!entry) continue;
+    const xml = await entry.async("string");
+    zip.file(name, transformDocxXml(xml, ctx, force, bijoyHeavy));
+    processed++;
+    onProgress?.({
+      stage: `Converted ${name}`,
+      percent: 25 + Math.round(processed / Math.max(1, names.length) * 60)
+    });
+  }
+  if (stylesEntry) {
+    const stylesXml = await stylesEntry.async("string");
+    zip.file("word/styles.xml", swapBijoyFontInBlock(stylesXml));
+  }
+  onProgress?.({ stage: "Repackaging .docx", percent: 90 });
+  const blob = await zip.generateAsync({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 }
+  });
+  onProgress?.({ stage: "Done", percent: 100 });
+  return blob;
+}
+async function convertOdt(file, options = {}) {
+  const { onProgress, force = false } = options;
+  onProgress?.({ stage: "Reading file", percent: 10 });
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const names = Object.keys(zip.files).filter(
+    (n) => /^(content|styles|meta)\.xml$/.test(n)
+  );
+  onProgress?.({ stage: "Building style \u2192 font map", percent: 25 });
+  const styleFontMap = /* @__PURE__ */ new Map();
+  for (const name of names) {
+    const entry = zip.file(name);
+    if (!entry) continue;
+    const xml = await entry.async("string");
+    const blockRe = /<style:style\b([^>]*)>([\s\S]*?)<\/style:style>/g;
+    let m;
+    while (m = blockRe.exec(xml)) {
+      const nameAttr = m[1].match(/style:name="([^"]+)"/);
+      const fontAttr = m[2].match(/style:font-name="([^"]+)"/);
+      if (nameAttr && fontAttr) {
+        styleFontMap.set(nameAttr[1], fontAttr[1]);
+      }
+    }
+  }
+  onProgress?.({ stage: "Converting text", percent: 40 });
+  const textElems = /(<text:(?:p|span|h)\b)([^>]*)>([\s\S]*?)(<\/text:(?:p|span|h)>)/g;
+  let processed = 0;
+  for (const name of names) {
+    const entry = zip.file(name);
+    if (!entry) continue;
+    let xml = await entry.async("string");
+    xml = xml.replace(textElems, (_m, openTag, attrs, inner, close) => {
+      const sm = attrs.match(/text:style-name="([^"]+)"/);
+      const styleName = sm?.[1];
+      const fontName = styleName ? styleFontMap.get(styleName) : null;
+      const fontIsBijoy = fontIsBijoyName(fontName);
+      const fontIsUnicode = fontIsUnicodeBangla(fontName);
+      let convert;
+      if (fontIsBijoy) convert = true;
+      else if (fontIsUnicode) convert = false;
+      else convert = force;
+      if (!convert) return `${openTag}${attrs}>${inner}${close}`;
+      const converted = inner.replace(
+        /(>)([^<]+)(<)/g,
+        (__, gt, txt, lt) => {
+          const decoded = decodeXmlText(txt);
+          if (hasBengaliUnicode(decoded)) return gt + txt + lt;
+          return gt + encodeXmlText(convertBijoyToUnicode(decoded)) + lt;
+        }
+      );
+      const finalInner = inner.includes("<") ? converted : (() => {
+        const decoded = decodeXmlText(inner);
+        if (hasBengaliUnicode(decoded)) return inner;
+        return encodeXmlText(convertBijoyToUnicode(decoded));
+      })();
+      return `${openTag}${attrs}>${finalInner}${close}`;
+    });
+    xml = swapBijoyFontInBlock(xml);
+    zip.file(name, xml);
+    processed++;
+    onProgress?.({
+      stage: `Converted ${name}`,
+      percent: 40 + Math.round(processed / Math.max(1, names.length) * 45)
+    });
+  }
+  onProgress?.({ stage: "Repackaging .odt", percent: 90 });
+  const blob = await zip.generateAsync({
+    type: "blob",
+    mimeType: "application/vnd.oasis.opendocument.text",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 }
+  });
+  onProgress?.({ stage: "Done", percent: 100 });
+  return blob;
+}
+var CP1252_TABLE = [
+  8364,
+  129,
+  8218,
+  402,
+  8222,
+  8230,
+  8224,
+  8225,
+  710,
+  8240,
+  352,
+  8249,
+  338,
+  141,
+  381,
+  143,
+  144,
+  8216,
+  8217,
+  8220,
+  8221,
+  8226,
+  8211,
+  8212,
+  732,
+  8482,
+  353,
+  8250,
+  339,
+  157,
+  382,
+  376
+];
+function cp1252Byte(n) {
+  if (n < 128 || n > 159) return String.fromCharCode(n);
+  return String.fromCharCode(CP1252_TABLE[n - 128]);
+}
+function rtfEscapeUnicode(s) {
+  let out = "";
+  for (const ch of s) {
+    const code = ch.codePointAt(0);
+    if (code < 128) {
+      if (ch === "\\" || ch === "{" || ch === "}") {
+        out += "\\" + ch;
+      } else {
+        out += ch;
+      }
+    } else if (code <= 65535) {
+      const signed = code > 32767 ? code - 65536 : code;
+      out += `\\u${signed}?`;
+    } else {
+      const cp = code - 65536;
+      const high = 55296 + (cp >> 10);
+      const low = 56320 + (cp & 1023);
+      const hs = high > 32767 ? high - 65536 : high;
+      const ls = low > 32767 ? low - 65536 : low;
+      out += `\\u${hs}?\\u${ls}?`;
+    }
+  }
+  return out;
+}
+async function convertRtf(file, options = {}) {
+  const { onProgress, force = false } = options;
+  onProgress?.({ stage: "Reading file", percent: 10 });
+  const text = await file.text();
+  onProgress?.({ stage: "Converting RTF", percent: 40 });
+  let i = 0;
+  let out = "";
+  let bijoyBuf = "";
+  const flush = () => {
+    if (!bijoyBuf) return;
+    const isHighByte = looksLikeBijoy(bijoyBuf);
+    const shouldConvert = force || isHighByte;
+    if (!shouldConvert || hasBengaliUnicode(bijoyBuf)) {
+      out += bijoyBuf;
+    } else {
+      const converted = convertBijoyToUnicode(bijoyBuf);
+      out += rtfEscapeUnicode(converted);
+    }
+    bijoyBuf = "";
+  };
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === "\\") {
+      if (text[i + 1] === "'" && /[0-9a-fA-F]{2}/.test(text.slice(i + 2, i + 4))) {
+        const byte = parseInt(text.slice(i + 2, i + 4), 16);
+        bijoyBuf += cp1252Byte(byte);
+        i += 4;
+        continue;
+      }
+      if (text[i + 1] === "u" && /\d/.test(text[i + 2] ?? "")) {
+        flush();
+        const m = /^\\u(-?\d+)\??([^\\]?)/.exec(text.slice(i));
+        if (m) {
+          out += m[0];
+          i += m[0].length;
+          continue;
+        }
+      }
+      flush();
+      if (text[i + 1] === "\\" || text[i + 1] === "{" || text[i + 1] === "}") {
+        out += text.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      const cw = /^\\[a-zA-Z]+-?\d* ?/.exec(text.slice(i));
+      if (cw) {
+        out += cw[0];
+        i += cw[0].length;
+        continue;
+      }
+      out += ch;
+      i++;
+      continue;
+    }
+    if (ch === "{" || ch === "}" || ch === "\r" || ch === "\n") {
+      flush();
+      out += ch;
+      i++;
+      continue;
+    }
+    bijoyBuf += ch;
+    i++;
+  }
+  flush();
+  onProgress?.({ stage: "Done", percent: 100 });
+  return new Blob([out], { type: "application/rtf" });
+}
+function inheritedFontIsBijoy(el) {
+  let cur = el;
+  while (cur) {
+    const face = cur.getAttribute?.("face");
+    if (face) {
+      if (fontIsBijoyName(face)) return true;
+      if (fontIsUnicodeBangla(face)) return false;
+    }
+    const style = cur.getAttribute?.("style") || "";
+    const m = style.match(/font-family\s*:\s*([^;]+)/i);
+    if (m) {
+      const fams = m[1];
+      if (fontIsBijoyName(fams)) return true;
+      if (fontIsUnicodeBangla(fams)) return false;
+    }
+    cur = cur.parentElement;
+  }
+  return void 0;
+}
+async function convertHtml(file, options = {}) {
+  const { onProgress, force = false } = options;
+  onProgress?.({ stage: "Reading file", percent: 10 });
+  const html = await file.text();
+  onProgress?.({ stage: "Converting", percent: 40 });
+  if (typeof DOMParser !== "undefined") {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const walker = doc.createTreeWalker(doc.body || doc, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      const t = node.nodeValue || "";
+      if (t.trim()) {
+        const fontIsBijoy = inheritedFontIsBijoy(node.parentElement);
+        let convert;
+        if (fontIsBijoy === true) convert = true;
+        else if (fontIsBijoy === false) convert = false;
+        else convert = force;
+        if (convert && !hasBengaliUnicode(t)) {
+          node.nodeValue = convertBijoyToUnicode(t);
+        }
+      }
+      node = walker.nextNode();
+    }
+    doc.querySelectorAll("[style]").forEach((el) => {
+      const s = (el.getAttribute("style") || "").replace(
+        ALL_FONT_REGEX,
+        UNICODE_FONT
+      );
+      el.setAttribute("style", s);
+    });
+    doc.querySelectorAll("font[face]").forEach((el) => {
+      const s = (el.getAttribute("face") || "").replace(
+        ALL_FONT_REGEX,
+        UNICODE_FONT
+      );
+      el.setAttribute("face", s);
+    });
+    let head = doc.head;
+    if (!head) {
+      head = doc.createElement("head");
+      doc.documentElement.insertBefore(head, doc.body);
+    }
+    if (!head.querySelector("meta[charset]")) {
+      const meta = doc.createElement("meta");
+      meta.setAttribute("charset", "utf-8");
+      head.insertBefore(meta, head.firstChild);
+    }
+    const serialized = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+    onProgress?.({ stage: "Done", percent: 100 });
+    return new Blob([serialized], { type: "text/html;charset=utf-8" });
+  }
+  const out = html.replace(
+    /(>)([^<]+)(<)/g,
+    (_m, gt, txt, lt) => {
+      if (!force) return gt + txt + lt;
+      if (hasBengaliUnicode(txt)) return gt + txt + lt;
+      return gt + convertBijoyToUnicode(txt) + lt;
+    }
+  );
+  return new Blob([out], { type: "text/html;charset=utf-8" });
+}
+async function convertTxt(file, options = {}) {
+  const { force = false } = options;
+  const text = await file.text();
+  const out = text.replace(/[^\r\n]+/g, (line) => {
+    if (hasBengaliUnicode(line)) return line;
+    if (force) return convertBijoyToUnicode(line);
+    if (looksLikeBijoy(line)) return convertBijoyToUnicode(line);
+    return line;
+  });
+  return new Blob([out], { type: "text/plain;charset=utf-8" });
+}
+function detectExt(name) {
+  const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
+  if (!m) return null;
+  const ext = m[1];
+  if (["docx", "odt", "rtf", "html", "htm", "txt"].includes(ext)) {
+    return ext;
+  }
+  return null;
+}
+function suggestOutputName(originalName, ext) {
+  const dot = originalName.lastIndexOf(".");
+  const base = dot >= 0 ? originalName.slice(0, dot) : originalName;
+  return `${base}-unicode.${ext}`;
+}
+async function convertFile(file, options = {}) {
+  const ext = detectExt(file.name);
+  if (!ext) {
+    throw new Error(
+      "Unsupported file type. Supported: .docx, .odt, .rtf, .html, .htm, .txt"
+    );
+  }
+  let blob;
+  switch (ext) {
+    case "docx":
+      blob = await convertDocx(file, options);
+      break;
+    case "odt":
+      blob = await convertOdt(file, options);
+      break;
+    case "rtf":
+      blob = await convertRtf(file, options);
+      break;
+    case "html":
+    case "htm":
+      blob = await convertHtml(file, options);
+      break;
+    case "txt":
+      blob = await convertTxt(file, options);
+      break;
+  }
+  return {
+    blob,
+    filename: suggestOutputName(file.name, ext)
+  };
+}
+
+
+function scanUnmapped(unicodeText) {
+  const out = /* @__PURE__ */ new Map();
+  if (!unicodeText) return out;
+  for (const ch of unicodeText) {
+    if (isSuspiciousLeftover(ch)) {
+      out.set(ch, (out.get(ch) ?? 0) + 1);
+    }
+  }
+  return out;
+}
+function isSuspiciousLeftover(ch) {
+  const code = ch.codePointAt(0);
+  if (code >= 2432 && code <= 2559) return false;
+  if (code >= 32 && code <= 126) return false;
+  if (code === 9 || code === 10 || code === 13) return false;
+  if (code === 8204 || code === 8205) return false;
+  if (code === 2404 || code === 2405) return false;
+  if (code >= 128 && code <= 591) return true;
+  if (code >= 8208 && code <= 8250) return true;
+  if (code === 338 || code === 339 || code === 352 || code === 353) return true;
+  return false;
+}
+function describeCodepoint(ch) {
+  const cp = ch.codePointAt(0);
+  return "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
+}
+return { convertDocx, convertFile, convertHtml, convertOdt, convertRtf, convertTxt, detectExt, suggestOutputName, convertBijoyToUnicode, looksLikeBijoy, hasBengaliUnicode, scanUnmapped, isSuspiciousLeftover, describeCodepoint, countBijoyBigrams, looksLikeEnglish, fontIsBijoyName, fontIsUnicodeBangla };
+})();
+
+/* .doc (Word binary) extractor, v3: text + formatting.
+ * Layers:
+ *   1. CFB/OLE container (FAT, miniFAT, directory)
+ *   2. FIB + piece table (CLX/PlcPcd) -> text with an FC->CP map
+ *   3. SttbfFfn font table -> font names
+ *   4. PlcfBteChpx -> ChpxFkp pages -> per-CP character props
+ *      (bold, italic, underline, half-point size, font indices)
+ *   5. PlcfBtePapx -> PapxFkp pages -> per-CP paragraph alignment
+ * Output: { paragraphs: [{ align, runs: [{ text, props }] }], fonts }
+ * Word 6/95 falls back to a single unformatted run per paragraph.
+ */
+window.DocExtract = (function () {
+  var CP1252_HIGH = [
+    0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
+    0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F,
+    0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+    0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178
+  ];
+  function cp1252(b) {
+    return b >= 0x80 && b <= 0x9F
+      ? String.fromCharCode(CP1252_HIGH[b - 0x80])
+      : String.fromCharCode(b);
+  }
+  function u16(dv, o) { return dv.getUint16(o, true); }
+  function u32(dv, o) { return dv.getUint32(o, true); }
+
+  /* ---------- 1. CFB ---------- */
+  function parseCfb(buf) {
+    var dv = new DataView(buf);
+    if (u32(dv, 0) !== 0xE011CFD0 || u32(dv, 4) !== 0xE11AB1A1) {
+      throw new Error("Not an OLE compound file (is this really a .doc?)");
+    }
+    var sec = 1 << u16(dv, 30);
+    var miniSec = 1 << u16(dv, 32);
+    var numDifat = u32(dv, 72);
+    var firstDir = u32(dv, 48);
+    var miniCutoff = u32(dv, 56);
+    var firstMiniFat = u32(dv, 60);
+    var numMiniFat = u32(dv, 64);
+    var firstDifat = u32(dv, 68);
+    function sectorOff(s) { return 512 + s * sec; }
+
+    var fatSectors = [];
+    for (var i = 0; i < 109; i++) {
+      var v = u32(dv, 76 + i * 4);
+      if (v !== 0xFFFFFFFF) fatSectors.push(v);
+    }
+    var difat = firstDifat, guard = 0;
+    while (difat !== 0xFFFFFFFE && difat !== 0xFFFFFFFF && guard++ < numDifat + 4) {
+      var base = sectorOff(difat);
+      for (var j = 0; j < (sec / 4) - 1; j++) {
+        var w = u32(dv, base + j * 4);
+        if (w !== 0xFFFFFFFF) fatSectors.push(w);
+      }
+      difat = u32(dv, base + sec - 4);
+    }
+    var perSec = sec / 4;
+    function fatNext(s) {
+      return u32(dv, sectorOff(fatSectors[Math.floor(s / perSec)]) + (s % perSec) * 4);
+    }
+    function readChain(start, size) {
+      var out = new Uint8Array(size), pos = 0, s = start, g = 0;
+      while (s !== 0xFFFFFFFE && pos < size && g++ < 1e6) {
+        var take = Math.min(sec, size - pos);
+        out.set(new Uint8Array(buf, sectorOff(s), take), pos);
+        pos += take; s = fatNext(s);
+      }
+      return out;
+    }
+    var dirBytes = [], s0 = firstDir, g2 = 0;
+    while (s0 !== 0xFFFFFFFE && g2++ < 1e5) {
+      dirBytes.push(new Uint8Array(buf, sectorOff(s0), sec));
+      s0 = fatNext(s0);
+    }
+    var dir = new Uint8Array(dirBytes.length * sec);
+    dirBytes.forEach(function (b, i) { dir.set(b, i * sec); });
+    var ddv = new DataView(dir.buffer, dir.byteOffset, dir.byteLength);
+    var entries = [];
+    for (var e = 0; e + 128 <= dir.length; e += 128) {
+      var nameLen = u16(ddv, e + 64);
+      if (!nameLen) continue;
+      var name = "";
+      for (var c = 0; c < nameLen / 2 - 1; c++) name += String.fromCharCode(u16(ddv, e + c * 2));
+      entries.push({ name: name, type: dir[e + 66], startSector: u32(ddv, e + 116), size: u32(ddv, e + 120) });
+    }
+    var root = entries.find(function (x) { return x.type === 5; });
+    var miniFat = readChain(firstMiniFat, numMiniFat * sec);
+    var mfdv = new DataView(miniFat.buffer, miniFat.byteOffset, miniFat.byteLength);
+    var miniStream = root ? readChain(root.startSector, root.size) : new Uint8Array(0);
+    function readMiniChain(start, size) {
+      var out = new Uint8Array(size), pos = 0, ms = start, g3 = 0;
+      while (ms !== 0xFFFFFFFE && pos < size && g3++ < 1e6) {
+        var take = Math.min(miniSec, size - pos);
+        out.set(miniStream.subarray(ms * miniSec, ms * miniSec + take), pos);
+        pos += take; ms = u32(mfdv, ms * 4);
+      }
+      return out;
+    }
+    return {
+      stream: function (name) {
+        var ent = entries.find(function (x) { return x.name === name && x.type === 2; });
+        if (!ent) return null;
+        return ent.size < miniCutoff ? readMiniChain(ent.startSector, ent.size)
+                                     : readChain(ent.startSector, ent.size);
+      }
+    };
+  }
+
+  /* ---------- sprm walker (operand size from spra bits) ---------- */
+  function walkSprms(bytes, dv, start, end, handler) {
+    var off = start;
+    while (off < end - 1) {
+      var sprm = u16(dv, off);
+      var spra = (sprm >> 13) & 7;
+      off += 2;
+      handler(sprm, off);
+      if (sprm === 0xD608 || sprm === 0xD609) {
+        // Table-definition operands: 2-byte cb whose value counts the
+        // following bytes plus one (MS-DOC quirk).
+        off += 2 + Math.max(0, u16(dv, off) - 1);
+        continue;
+      }
+      if (spra === 0 || spra === 1) off += 1;
+      else if (spra === 2 || spra === 4 || spra === 5) off += 2;
+      else if (spra === 3) off += 4;
+      else if (spra === 7) off += 3;
+      else if (spra === 6) off += bytes[off] + 1;
+      else return;
+    }
+  }
+  // Byte-toggle sprm semantics: 0 off, 1 on, 128 follow style, 129 invert
+  // style. Without stylesheet resolution: 1 and 129 -> on, else inherit.
+  function toggleVal(b) { return b === 1 || b === 129 ? true : b === 0 ? false : null; }
+
+  /* ---------- main ---------- */
+  function extract(buf) {
+    var cfb = parseCfb(buf);
+    var wd = cfb.stream("WordDocument");
+    if (!wd) throw new Error("No WordDocument stream found");
+    var wdv = new DataView(wd.buffer, wd.byteOffset, wd.byteLength);
+    var wIdent = u16(wdv, 0);
+    if (wIdent !== 0xA5EC && wIdent !== 0xA5DC) {
+      throw new Error("Unrecognized Word format (wIdent 0x" + wIdent.toString(16) + ")");
+    }
+    var nFib = u16(wdv, 2);
+    var flags = u16(wdv, 0x0A);
+    if (flags & 0x0100) throw new Error("This .doc is password-protected/encrypted");
+
+    /* ----- Word 6/95: plain text, one run per paragraph ----- */
+    if (wIdent === 0xA5DC || nFib < 101) {
+      var fcMin = u32(wdv, 0x18), fcMac = u32(wdv, 0x1C), t = "";
+      for (var i0 = fcMin; i0 < fcMac && i0 < wd.length; i0++) t += cp1252(wd[i0]);
+      return legacyResult(t);
+    }
+
+    var table = cfb.stream((flags & 0x0200) ? "1Table" : "0Table")
+             || cfb.stream("1Table") || cfb.stream("0Table");
+    if (!table) throw new Error("No table stream found");
+    var tdv = new DataView(table.buffer, table.byteOffset, table.byteLength);
+    var dataStream = cfb.stream("Data");
+    var ddvData = dataStream
+      ? new DataView(dataStream.buffer, dataStream.byteOffset, dataStream.byteLength)
+      : null;
+
+    /* ----- 2. Pieces: text + FC->CP mapping ----- */
+    var fcClx = u32(wdv, 0x01A2), lcbClx = u32(wdv, 0x01A6);
+    if (!lcbClx || fcClx + lcbClx > table.length) throw new Error("Invalid piece table location");
+    var p = fcClx, end = fcClx + lcbClx, plcOff = -1, plcSize = 0;
+    while (p < end) {
+      var clxt = table[p];
+      if (clxt === 1) p += 3 + u16(tdv, p + 1);
+      else if (clxt === 2) { plcSize = u32(tdv, p + 1); plcOff = p + 5; break; }
+      else throw new Error("Malformed CLX");
+    }
+    if (plcOff < 0) throw new Error("No piece descriptor table found");
+    var n = (plcSize - 4) / 12;
+    var cps = [];
+    for (var k = 0; k <= n; k++) cps.push(u32(tdv, plcOff + k * 4));
+    var pcdBase = plcOff + (n + 1) * 4;
+
+    var totalCp = cps[n];
+    var chars = new Array(totalCp);
+    var pieces = [];               // { cpStart, cpEnd, fc, bytesPerChar }
+    for (var pi = 0; pi < n; pi++) {
+      var fcRaw = u32(tdv, pcdBase + pi * 8 + 2);
+      var compressed = (fcRaw & 0x40000000) !== 0;
+      var fc = fcRaw & 0x3FFFFFFF;
+      if (compressed) fc = fc / 2;
+      var len = cps[pi + 1] - cps[pi];
+      var bpc = compressed ? 1 : 2;
+      pieces.push({ cpStart: cps[pi], cpEnd: cps[pi + 1], fc: fc, bpc: bpc });
+      for (var a = 0; a < len; a++) {
+        chars[cps[pi] + a] = compressed
+          ? cp1252(wd[fc + a])
+          : String.fromCharCode(u16(wdv, fc + a * 2));
+      }
+    }
+
+    // FC range -> list of CP ranges (pieces may be scattered in fast saves)
+    function fcRangeToCp(fcS, fcE, apply) {
+      for (var q = 0; q < pieces.length; q++) {
+        var pc = pieces[q];
+        var pcFcEnd = pc.fc + (pc.cpEnd - pc.cpStart) * pc.bpc;
+        var s = Math.max(fcS, pc.fc), e = Math.min(fcE, pcFcEnd);
+        if (s >= e) continue;
+        var cpS = pc.cpStart + Math.floor((s - pc.fc) / pc.bpc);
+        var cpE = pc.cpStart + Math.ceil((e - pc.fc) / pc.bpc);
+        apply(cpS, Math.min(cpE, pc.cpEnd));
+      }
+    }
+
+    /* ----- 3. Font table ----- */
+    var fonts = [];
+    var fcSttbfFfn = u32(wdv, 0x0112), lcbSttbfFfn = u32(wdv, 0x0116);
+    if (lcbSttbfFfn && fcSttbfFfn + lcbSttbfFfn <= table.length) {
+      var fo = fcSttbfFfn;
+      var cData = u16(tdv, fo); fo += 2;
+      fo += 2; // cbExtra
+      for (var fi = 0; fi < cData && fo < fcSttbfFfn + lcbSttbfFfn; fi++) {
+        var cbFfnM1 = table[fo];
+        var entryStart = fo + 1;            // start of FFN payload
+        // FFN: flags(1) wWeight(2) chs(1) ixchSzAlt(1) panose(10) fs(24) name
+        var nameOff = entryStart + 39;
+        var fname = "";
+        for (var ci = nameOff; ci + 1 < entryStart + cbFfnM1 + 1; ci += 2) {
+          var cc = u16(tdv, ci);
+          if (cc === 0) break;
+          fname += String.fromCharCode(cc);
+        }
+        fonts.push(fname);
+        fo = entryStart + cbFfnM1;
+      }
+    }
+
+    /* ----- 4. CHPX -> per-CP character props ----- */
+    var propsList = [{}];                       // index 0 = default props
+    var propIdx = new Int32Array(totalCp);      // all default initially
+    var fcPlcfBteChpx = u32(wdv, 0x00FA), lcbPlcfBteChpx = u32(wdv, 0x00FE);
+    if (lcbPlcfBteChpx && fcPlcfBteChpx + lcbPlcfBteChpx <= table.length) {
+      var cnt = (lcbPlcfBteChpx - 4) / 8;
+      var dataOff = fcPlcfBteChpx + (cnt + 1) * 4;
+      for (var bi = 0; bi < cnt; bi++) {
+        var pn = u32(tdv, dataOff + bi * 4);
+        var page = pn * 512;
+        if (page + 512 > wd.length) continue;
+        var crun = wd[page + 511];
+        for (var r = 0; r < crun; r++) {
+          var rgfc = u32(wdv, page + r * 4);
+          var rgfcNext = u32(wdv, page + (r + 1) * 4);
+          var rgb = wd[page + (crun + 1) * 4 + r];
+          if (rgb === 0) continue;               // default props
+          var chpxOff = page + rgb * 2;
+          var cb = wd[chpxOff];
+          var pr = { bold: null, italic: null, ul: null, hps: null, ftc0: null, ftc2: null, fcPic: null };
+          walkSprms(wd, wdv, chpxOff + 1, chpxOff + 1 + cb, function (sprm, opOff) {
+            switch (sprm) {
+              case 0x0835: pr.bold = toggleVal(wd[opOff]); break;      // sprmCFBold
+              case 0x0836: pr.italic = toggleVal(wd[opOff]); break;    // sprmCFItalic
+              case 0x2A3E: pr.ul = wd[opOff] !== 0; break;             // sprmCKul
+              case 0x4A43: pr.hps = u16(wdv, opOff); break;            // sprmCHps
+              case 0x4A4F: pr.ftc0 = u16(wdv, opOff); break;           // sprmCRgFtc0
+              case 0x4A51: pr.ftc2 = u16(wdv, opOff); break;           // sprmCRgFtc2
+              case 0x6A03: pr.fcPic = u32(wdv, opOff); break;           // sprmCPicLocation
+            }
+          });
+          if (pr.bold === null && pr.italic === null && pr.ul === null &&
+              pr.hps === null && pr.ftc0 === null && pr.ftc2 === null &&
+              pr.fcPic === null) continue;
+          var idx = propsList.push(pr) - 1;
+          fcRangeToCp(rgfc, rgfcNext, function (cpS, cpE) {
+            for (var cc2 = cpS; cc2 < cpE; cc2++) propIdx[cc2] = idx;
+          });
+        }
+      }
+    }
+
+    /* ----- 5. PAPX -> per-CP alignment + table structure ----- */
+    var alignByCp = new Int8Array(totalCp);      // 0 l, 1 c, 2 r, 3 j
+    var inTableByCp = new Int8Array(totalCp);
+    var ttpByCp = new Int8Array(totalCp);
+    var rowDefByCp = {};                         // TTP cp -> { widths, bordered }
+    function parseTDefTable(opOff) {
+      var cb = u16(wdv, opOff);
+      if (cb < 3) return null;
+      var d = opOff + 2;
+      var cols = wd[d];
+      if (!cols || cols > 63) return null;
+      var widths = [], bordered = false;
+      for (var ci = 0; ci < cols; ci++) {
+        var a = wdv.getInt16(d + 1 + ci * 2, true);
+        var b = wdv.getInt16(d + 1 + (ci + 1) * 2, true);
+        widths.push(Math.max(120, b - a));
+      }
+      var tcBase = d + 1 + (cols + 1) * 2;
+      for (var ti = 0; ti < cols; ti++) {
+        var tc = tcBase + ti * 20;
+        if (tc + 20 > d + cb - 1) break;
+        for (var bi2 = 0; bi2 < 4; bi2++) {
+          if (wd[tc + 4 + bi2 * 4 + 1] !== 0) { bordered = true; break; }
+        }
+        if (bordered) break;
+      }
+      return { widths: widths, bordered: bordered };
+    }
+    var fcPlcfBtePapx = u32(wdv, 0x0102), lcbPlcfBtePapx = u32(wdv, 0x0106);
+    if (lcbPlcfBtePapx && fcPlcfBtePapx + lcbPlcfBtePapx <= table.length) {
+      var pcnt = (lcbPlcfBtePapx - 4) / 8;
+      var pDataOff = fcPlcfBtePapx + (pcnt + 1) * 4;
+      for (var pbi = 0; pbi < pcnt; pbi++) {
+        var ppn = u32(tdv, pDataOff + pbi * 4);
+        var ppage = ppn * 512;
+        if (ppage + 512 > wd.length) continue;
+        var pcrun = wd[ppage + 511];
+        for (var prr = 0; prr < pcrun; prr++) {
+          var prgfc = u32(wdv, ppage + prr * 4);
+          var prgfcNext = u32(wdv, ppage + (prr + 1) * 4);
+          var bx = wd[ppage + (pcrun + 1) * 4 + prr * 13];
+          if (bx === 0) continue;
+          var papxOff = ppage + bx * 2;
+          var cw = wd[papxOff], grpStart;
+          if (cw !== 0) { grpStart = papxOff + 1; } else { cw = wd[papxOff + 1]; grpStart = papxOff + 2; }
+          var grpEnd = grpStart + cw * 2 - (wd[papxOff] !== 0 ? 1 : 0);
+          var jc = -1, fInTable = false, fTtp = false, rowDef = null;
+          walkSprms(wd, wdv, grpStart + 2 /* skip istd */, grpEnd, function (sprm, opOff) {
+            if (sprm === 0x2403 || sprm === 0x2461) jc = wd[opOff];    // sprmPJc80 / sprmPJc
+            else if (sprm === 0x2416) fInTable = wd[opOff] === 1;      // sprmPFInTable
+            else if (sprm === 0x2417) fTtp = wd[opOff] === 1;          // sprmPFTtp
+            else if (sprm === 0xD608) rowDef = parseTDefTable(opOff);  // sprmTDefTable
+          });
+          if (jc >= 0 && jc <= 3 || fInTable || fTtp) {
+            fcRangeToCp(prgfc, prgfcNext, function (cpS, cpE) {
+              for (var cc3 = cpS; cc3 < cpE; cc3++) {
+                if (jc >= 0 && jc <= 3) alignByCp[cc3] = jc;
+                if (fInTable) inTableByCp[cc3] = 1;
+                if (fTtp) {
+                  ttpByCp[cc3] = 1;
+                  if (rowDef) rowDefByCp[cc3] = rowDef;
+                }
+              }
+            });
+          }
+        }
+      }
+    }
+
+    /* ----- images: blip decoding ----- */
+    // OfficeArt blip record -> { ext, bytes, compressed } or null.
+    function decodeBlip(bytes, bdv, off) {
+      var vi = u16(bdv, off), rt = u16(bdv, off + 2), rl = u32(bdv, off + 4);
+      var inst = vi >> 4, payload = off + 8, endB = off + 8 + rl;
+      if (endB > bytes.length) return null;
+      var RASTER = { 0xF01D: "jpeg", 0xF01E: "png", 0xF01F: "dib", 0xF029: "tiff" };
+      var META = { 0xF01A: "emf", 0xF01B: "wmf" };
+      if (RASTER[rt]) {
+        var dual = inst === 0x46B || inst === 0x6E1 || inst === 0x7A9 || inst === 0x6E5;
+        var s = payload + 16 + (dual ? 16 : 0) + 1;   // UID(s) + tag byte
+        if (s >= endB) return null;
+        var raw = bytes.slice(s, endB);
+        if (RASTER[rt] === "dib") return { ext: "bmp", bytes: dibToBmp(raw), compressed: false };
+        return { ext: RASTER[rt], bytes: raw, compressed: false };
+      }
+      if (META[rt]) {
+        var dual2 = inst === 0x3D5 || inst === 0x217;
+        var mh = payload + 16 + (dual2 ? 16 : 0);      // metafile header: 34 bytes
+        if (mh + 34 > endB) return null;
+        var cbSave = u32(bdv, mh + 28);
+        var compression = bytes[mh + 32];
+        var raw2 = bytes.slice(mh + 34, Math.min(mh + 34 + cbSave, endB));
+        return { ext: META[rt], bytes: raw2, compressed: compression === 0 };
+      }
+      return null;
+    }
+    function dibToBmp(dib) {
+      var dv2 = new DataView(dib.buffer, dib.byteOffset, dib.byteLength);
+      var headerSize = u32(dv2, 0);
+      var bitCount = u16(dv2, 14);
+      var clrUsed = headerSize >= 36 ? u32(dv2, 32) : 0;
+      var palette = bitCount <= 8 ? (clrUsed || (1 << bitCount)) : clrUsed;
+      var offBits = 14 + headerSize + palette * 4;
+      var out = new Uint8Array(14 + dib.length);
+      var odv = new DataView(out.buffer);
+      out[0] = 0x42; out[1] = 0x4D;                    // "BM"
+      odv.setUint32(2, out.length, true);
+      odv.setUint32(10, offBits, true);
+      out.set(dib, 14);
+      return out;
+    }
+    // Walk OfficeArt records in [start,end): descend containers, resolve
+    // FBSEs (embedded blip after 36-byte header, or delayed blip in the
+    // WordDocument stream via foDelay), return first blip found.
+    function findBlip(bytes, bdv, start, endB) {
+      var off = start;
+      while (off + 8 <= endB) {
+        var vi = u16(bdv, off), rt = u16(bdv, off + 2), rl = u32(bdv, off + 4);
+        if (rt >= 0xF01A && rt <= 0xF029) {
+          var b = decodeBlip(bytes, bdv, off);
+          if (b) return b;
+        } else if (rt === 0xF007) {
+          var b2 = resolveFbse(bytes, bdv, off, rl);
+          if (b2) return b2;
+        } else if ((vi & 0xF) === 0xF) {
+          var b3 = findBlip(bytes, bdv, off + 8, Math.min(off + 8 + rl, endB));
+          if (b3) return b3;
+        }
+        off += 8 + rl;
+        if (rl === 0 && (vi & 0xF) !== 0xF) break;
+      }
+      return null;
+    }
+    function resolveFbse(bytes, bdv, off, rl) {
+      if (rl > 36) {                                   // embedded blip follows FBSE header
+        return decodeBlip(bytes, bdv, off + 8 + 36);
+      }
+      var foDelay = u32(bdv, off + 8 + 28);            // delayed: offset in WordDocument
+      if (foDelay > 0 && foDelay + 8 < wd.length) {
+        return decodeBlip(wd, wdv, foDelay);
+      }
+      return null;
+    }
+    // Inline picture: PICF structure in the Data stream at fcPic.
+    function parsePicf(fcPic) {
+      if (!dataStream || fcPic == null || fcPic + 68 > dataStream.length) return null;
+      var lcb = u32(ddvData, fcPic);
+      var cbHeader = u16(ddvData, fcPic + 4);
+      if (lcb < cbHeader || fcPic + lcb > dataStream.length) return null;
+      var dxaGoal = u16(ddvData, fcPic + 28), dyaGoal = u16(ddvData, fcPic + 30);
+      var mx = u16(ddvData, fcPic + 32) || 1000, my = u16(ddvData, fcPic + 34) || 1000;
+      var blip = findBlip(dataStream, ddvData, fcPic + cbHeader, fcPic + lcb);
+      if (!blip) return null;
+      blip.wTwips = Math.max(1, Math.round((dxaGoal || 1440) * mx / 1000));
+      blip.hTwips = Math.max(1, Math.round((dyaGoal || 1440) * my / 1000));
+      return blip;
+    }
+    /* ----- floating shapes: BStore blips + spid->pib + anchors ----- */
+    var floatingByCp = {};
+    (function () {
+      var fcDgg = u32(wdv, 0x022A), lcbDgg = u32(wdv, 0x022E);
+      if (!lcbDgg || fcDgg + lcbDgg > table.length) return;
+      var bstore = [], spidToPib = {};
+      (function harvest(start, endB) {
+        var off = start;
+        while (off + 8 <= endB) {
+          var vi = u16(tdv, off), rt = u16(tdv, off + 2), rl = u32(tdv, off + 4);
+          if (rt < 0xF000 || rt > 0xF1FF) { off += 1; continue; }  // resync (dgglbl bytes etc.)
+          if (rt === 0xF007) {
+            bstore.push(resolveFbse(table, tdv, off, rl));
+          } else if (rt === 0xF004) {                  // SpContainer: pair spid + pib
+            var spid = null, pib = null, so = off + 8, sEnd = off + 8 + rl;
+            while (so + 8 <= sEnd) {
+              var svi = u16(tdv, so), srt = u16(tdv, so + 2), srl = u32(tdv, so + 4);
+              if (srt === 0xF00A) spid = u32(tdv, so + 8);
+              if (srt === 0xF00B) {
+                var cnt = svi >> 4, po = so + 8;
+                for (var oi = 0; oi < cnt && po + 6 <= sEnd; oi++) {
+                  var opid = u16(tdv, po), val = u32(tdv, po + 2);
+                  if ((opid & 0x3FFF) === 260) pib = val;
+                  po += 6;
+                }
+              }
+              so += 8 + srl;
+              if (srl === 0 && (svi & 0xF) !== 0xF) break;
+            }
+            if (spid != null && pib != null) spidToPib[spid] = pib;
+          } else if ((vi & 0xF) === 0xF) {
+            harvest(off + 8, Math.min(off + 8 + rl, endB));
+          } else if (rl === 0) break;
+          off += 8 + rl;
+        }
+      })(fcDgg, fcDgg + lcbDgg);
+      var fcSpa = u32(wdv, 0x01DA), lcbSpa = u32(wdv, 0x01DE);
+      if (!lcbSpa || fcSpa + lcbSpa > table.length) return;
+      var nSpa = Math.floor((lcbSpa - 4) / 30);
+      for (var si = 0; si < nSpa; si++) {
+        var cp = u32(tdv, fcSpa + si * 4);
+        var spid2 = u32(tdv, fcSpa + (nSpa + 1) * 4 + si * 26);
+        var pib2 = spidToPib[spid2];
+        if (pib2 != null && bstore[pib2 - 1]) {
+          var img = bstore[pib2 - 1];
+          // SPA rectangle: spid(4) then left/top/right/bottom int32 twips
+          var spaOff = fcSpa + (nSpa + 1) * 4 + si * 26;
+          var L = tdv.getInt32(spaOff + 4, true), T = tdv.getInt32(spaOff + 8, true);
+          var R = tdv.getInt32(spaOff + 12, true), B = tdv.getInt32(spaOff + 16, true);
+          var w = R - L, h = B - T;
+          img.wTwips = (w > 0 && w < 200000) ? w : (img.wTwips || 2880);
+          img.hTwips = (h > 0 && h < 200000) ? h : (img.hTwips || 2160);
+          floatingByCp[cp] = img;
+        }
+      }
+    })();
+
+    /* ----- assemble styled blocks ----- */
+    return assemble(chars, propIdx, alignByCp, propsList, fonts, parsePicf, floatingByCp,
+                    inTableByCp, ttpByCp, rowDefByCp);
+  }
+
+  var ALIGN = ["left", "center", "right", "justify"];
+
+  function assemble(chars, propIdx, alignByCp, propsList, fonts, parsePicf, floatingByCp,
+                    inTableByCp, ttpByCp, rowDefByCp) {
+    parsePicf = parsePicf || function () { return null; };
+    floatingByCp = floatingByCp || {};
+    inTableByCp = inTableByCp || new Int8Array(chars.length);
+    ttpByCp = ttpByCp || new Int8Array(chars.length);
+    rowDefByCp = rowDefByCp || {};
+
+    var blocks = [];
+    var runs = [], curText = "", curIdx = -1;
+    var cellParas = null, curRow = null, curTable = null;
+    var inField = false;
+
+    function flushRun() {
+      if (curText) runs.push({ text: curText, props: propsList[curIdx] || {} });
+      curText = "";
+    }
+    function makePara(alignCode) {
+      var p = { align: ALIGN[alignCode] || "left", runs: runs };
+      runs = []; curIdx = -1;
+      return p;
+    }
+    function closeTable() {
+      if (curRow && curRow.cells.length) curTable.rows.push(curRow);
+      if (curTable && curTable.rows.length) blocks.push(curTable);
+      curTable = null; curRow = null; cellParas = null;
+    }
+    function ensureCell() {
+      if (!curTable) curTable = { type: "table", rows: [] };
+      if (!curRow) curRow = { cells: [], widths: null, bordered: true };
+      if (!cellParas) cellParas = [];
+    }
+
+    for (var i = 0; i < chars.length; i++) {
+      var ch = chars[i], code = ch ? ch.charCodeAt(0) : 0;
+      var inTbl = inTableByCp[i] === 1;
+
+      if (floatingByCp[i]) {
+        flushRun(); curIdx = -1;
+        runs.push({ image: floatingByCp[i], props: {} });
+      }
+      if (code === 0x01) {
+        var rp = propsList[propIdx[i]] || {};
+        var img = parsePicf(rp.fcPic);
+        if (img) { flushRun(); curIdx = -1; runs.push({ image: img, props: {} }); }
+        continue;
+      }
+      if (code === 0x13) { inField = true; continue; }
+      if (code === 0x14 || code === 0x15) { inField = false; continue; }
+      if (inField) continue;
+
+      if (code === 0x07 && inTbl) {
+        flushRun();
+        if (ttpByCp[i]) {                          // row mark
+          ensureCell();
+          if (cellParas.length || runs.length) {   // stray content before mark
+            if (runs.length) cellParas.push(makePara(alignByCp[i]));
+            if (cellParas.length) curRow.cells.push(cellParas);
+          }
+          var def = rowDefByCp[i];
+          if (def) { curRow.widths = def.widths; curRow.bordered = def.bordered; }
+          curTable.rows.push(curRow);
+          curRow = null; cellParas = null;
+          runs = []; curIdx = -1;
+        } else {                                   // cell mark
+          ensureCell();
+          cellParas.push(makePara(alignByCp[i]));
+          curRow.cells.push(cellParas);
+          cellParas = null;
+        }
+        continue;
+      }
+      if (code === 0x0D || code === 0x0B || code === 0x0C) {
+        flushRun();
+        if (inTbl) {                               // paragraph break inside a cell
+          ensureCell();
+          cellParas.push(makePara(alignByCp[i]));
+        } else {
+          if (curTable) closeTable();
+          var p2 = makePara(alignByCp[i]);
+          p2.type = "p";
+          blocks.push(p2);
+        }
+        continue;
+      }
+      if (!inTbl && curTable) closeTable();
+      if (code === 0x1E) { ch = "-"; }
+      else if (code === 0x09) { ch = "\t"; }
+      else if (code < 0x20) { continue; }
+      if (propIdx[i] !== curIdx) { flushRun(); curIdx = propIdx[i]; }
+      curText += ch;
+    }
+    flushRun();
+    if (curTable) closeTable();
+    if (runs.length) { var pl = makePara(0); pl.type = "p"; blocks.push(pl); }
+
+    while (blocks.length) {
+      var last = blocks[blocks.length - 1];
+      if (last.type === "p" &&
+          (last.runs.length === 0 ||
+           last.runs.every(function (r) { return !r.image && !r.text.trim(); }))) blocks.pop();
+      else break;
+    }
+    return { blocks: blocks, fonts: fonts };
+  }
+
+  function legacyResult(text) {
+    var blocks = text.split(/[\r\x0B\x0C]/).map(function (t) {
+      return { type: "p", align: "left",
+               runs: t ? [{ text: t.replace(/[\x00-\x08\x0E-\x1F]/g, ""), props: {} }] : [] };
+    });
+    while (blocks.length && (!blocks[blocks.length - 1].runs.length ||
+           !blocks[blocks.length - 1].runs[0].text.trim())) blocks.pop();
+    return { blocks: blocks, fonts: [] };
+  }
+
+  return { extract: extract };
+})();
+
+/* .doc → Unicode .docx pipeline, v3: formatting-aware.
+ * Uses per-run font names recovered from the .doc CHPX layer for the same
+ * strict font-aware detection the .docx path has; falls back to paragraph
+ * heuristics only when a run has no font information. Bold, italic,
+ * underline, font size, and paragraph alignment are carried into the
+ * output .docx.
+ */
+window.DocConvert = (function () {
+  var E = window.BijoyEngine;
+
+  function esc(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function runFontName(props, fonts) {
+    if (props.ftc0 != null && fonts[props.ftc0]) return fonts[props.ftc0];
+    if (props.ftc2 != null && fonts[props.ftc2]) return fonts[props.ftc2];
+    return null;
+  }
+
+  // Paragraph-level heuristic for runs without font info (same as v2)
+  function paraLooksBijoy(text, force, docIsBijoyHeavy) {
+    var t = text.trim();
+    if (!t || E.hasBengaliUnicode(t)) return false;
+    if (force) return true;
+    if (E.looksLikeBijoy(t)) return true;
+    var bigrams = E.countBijoyBigrams(t);
+    if (bigrams >= 2 && !E.looksLikeEnglish(t)) return true;
+    if (docIsBijoyHeavy && bigrams >= 1 && !E.looksLikeEnglish(t)) return true;
+    return false;
+  }
+
+  // Decide per run: "convert" | "bangla" (already Unicode) | "keep"
+  function classifyRun(run, fonts, paraBijoy, force) {
+    var t = run.text || "";
+    if (!t.trim()) return "keep";
+    if (E.hasBengaliUnicode(t)) return "bangla";
+    var font = runFontName(run.props, fonts);
+    if (font) {
+      if (E.fontIsBijoyName(font)) return "convert";
+      if (E.fontIsUnicodeBangla(font)) return "bangla";
+      // Known non-Bangla font: only force overrides
+      if (force) return "convert";
+      // A run in e.g. Times inside a Bijoy paragraph: convert only if the
+      // text itself carries Bijoy markers (mis-tagged runs are common).
+      if (E.looksLikeBijoy(t) && paraBijoy) return "convert";
+      return "keep";
+    }
+    return (force || paraBijoy) ? "convert" : "keep";
+  }
+
+  var JC = { left: null, center: "center", right: "right", justify: "both" };
+
+  function rPrXml(props, mode, fonts) {
+    var parts = [];
+    if (mode === "convert" || mode === "bangla") {
+      parts.push('<w:rFonts w:ascii="Nikosh" w:hAnsi="Nikosh" w:cs="Nikosh"/>');
+    } else {
+      var f = runFontName(props, fonts);
+      if (f) parts.push('<w:rFonts w:ascii="' + esc(f) + '" w:hAnsi="' + esc(f) + '"/>');
+    }
+    if (props.bold) parts.push("<w:b/>");
+    if (props.italic) parts.push("<w:i/>");
+    if (props.ul) parts.push('<w:u w:val="single"/>');
+    if (props.hps) {
+      parts.push('<w:sz w:val="' + props.hps + '"/>');
+      parts.push('<w:szCs w:val="' + props.hps + '"/>');
+    }
+    return parts.length ? "<w:rPr>" + parts.join("") + "</w:rPr>" : "";
+  }
+
+  async function inflate(bytes) {
+    var tryFmt = async function (fmt) {
+      var ds = new DecompressionStream(fmt);
+      var stream = new Blob([bytes]).stream().pipeThrough(ds);
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    };
+    try { return await tryFmt("deflate"); }
+    catch (e) { return await tryFmt("deflate-raw"); }
+  }
+
+  function drawingXml(rid, wTwips, hTwips, id) {
+    var cx = Math.max(1, wTwips * 635), cy = Math.max(1, hTwips * 635);  // twip -> EMU
+    return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" ' +
+      'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
+      '<wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
+      '<wp:docPr id="' + id + '" name="Picture ' + id + '"/>' +
+      '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+      '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+      '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+      '<pic:nvPicPr><pic:cNvPr id="' + id + '" name="Picture ' + id + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
+      '<pic:blipFill><a:blip r:embed="' + rid + '" ' +
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>' +
+      '<a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+      '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+      '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
+      '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
+  }
+
+  function runXml(text, rpr) {
+    var parts = text.split("\t");
+    var xml = "";
+    for (var i = 0; i < parts.length; i++) {
+      if (i > 0) xml += "<w:r>" + rpr + "<w:tab/></w:r>";
+      if (parts[i]) {
+        xml += "<w:r>" + rpr + '<w:t xml:space="preserve">' + esc(parts[i]) + "</w:t></w:r>";
+      }
+    }
+    return xml;
+  }
+
+  var MIME = { png: "image/png", jpeg: "image/jpeg", bmp: "image/bmp",
+               tiff: "image/tiff", emf: "image/x-emf", wmf: "image/x-wmf" };
+
+  function paraXml(p) {
+    var ppr = p.jc ? '<w:pPr><w:jc w:val="' + p.jc + '"/></w:pPr>' : "";
+    var runs = p.runs.map(function (r) {
+      return r.drawing ? r.drawing : runXml(r.text, r.rpr);
+    }).join("");
+    return "<w:p>" + ppr + (runs || "<w:r><w:t/></w:r>") + "</w:p>";
+  }
+
+  function tableXml(t) {
+    var grid = (t.rows[0] && t.rows[0].widths) || [];
+    var borders = t.rows.some(function (r) { return r.bordered; })
+      ? "<w:tblBorders>" +
+        ["top", "left", "bottom", "right", "insideH", "insideV"].map(function (s) {
+          return "<w:" + s + ' w:val="single" w:sz="4" w:space="0" w:color="000000"/>';
+        }).join("") + "</w:tblBorders>"
+      : "";
+    var xml = "<w:tbl><w:tblPr>" +
+      '<w:tblW w:w="0" w:type="auto"/>' + borders +
+      '<w:tblLayout w:type="fixed"/></w:tblPr>';
+    if (grid.length) {
+      xml += "<w:tblGrid>" + grid.map(function (w) {
+        return '<w:gridCol w:w="' + w + '"/>';
+      }).join("") + "</w:tblGrid>";
+    }
+    t.rows.forEach(function (row) {
+      xml += "<w:tr>";
+      row.cells.forEach(function (cell, ci) {
+        var w = (row.widths && row.widths[ci]) || 0;
+        xml += "<w:tc><w:tcPr>" +
+          (w ? '<w:tcW w:w="' + w + '" w:type="dxa"/>' : '<w:tcW w:w="0" w:type="auto"/>') +
+          "</w:tcPr>" +
+          (cell.map(paraXml).join("") || "<w:p/>") +
+          "</w:tc>";
+      });
+      xml += "</w:tr>";
+    });
+    return xml + "</w:tbl>";
+  }
+
+  function buildDocx(blocks, media) {
+    var body = blocks.map(function (b) {
+      return b.type === "table" ? tableXml(b) : paraXml(b);
+    }).join("");
+    // A table may not be the final body element; pad with an empty paragraph.
+    if (blocks.length && blocks[blocks.length - 1].type === "table") body += "<w:p/>";
+    var documentXml =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+      "<w:body>" + body + "</w:body></w:document>";
+
+    var zip = new JSZip();
+    var exts = {};
+    media.forEach(function (m) { exts[m.ext] = MIME[m.ext] || "application/octet-stream"; });
+    var defaults = Object.keys(exts).map(function (e) {
+      return '<Default Extension="' + e + '" ContentType="' + exts[e] + '"/>';
+    }).join("");
+    zip.file("[Content_Types].xml",
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' + defaults +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      "</Types>");
+    zip.file("_rels/.rels",
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+      "</Relationships>");
+    if (media.length) {
+      var rels = media.map(function (m) {
+        return '<Relationship Id="' + m.rid + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/' + m.name + '"/>';
+      }).join("");
+      zip.file("word/_rels/document.xml.rels",
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        rels + "</Relationships>");
+      media.forEach(function (m) { zip.file("word/media/" + m.name, m.bytes); });
+    }
+    zip.file("word/document.xml", documentXml);
+    return zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+  }
+
+  async function convertDoc(file, options) {
+    options = options || {};
+    var progress = options.onProgress || function () {};
+    var force = !!options.force;
+
+    progress({ stage: "Reading file", percent: 5 });
+    var buf = await file.arrayBuffer();
+
+    progress({ stage: "Parsing .doc binary", percent: 20 });
+    var extracted = window.DocExtract.extract(buf);
+    var blocks = extracted.blocks;
+    var fonts = extracted.fonts;
+    var fontAware = fonts.length > 0;
+    // Flat view of every paragraph (body + inside table cells)
+    var paras = [];
+    blocks.forEach(function (b) {
+      if (b.type === "table") {
+        b.rows.forEach(function (r) { r.cells.forEach(function (c) {
+          c.forEach(function (p) { paras.push(p); });
+        }); });
+      } else paras.push(b);
+    });
+
+    progress({ stage: fontAware ? "Detecting Bijoy fonts" : "Detecting Bijoy text", percent: 45 });
+    var bijoyish = 0, nonEmpty = 0;
+    paras.forEach(function (p) {
+      var t = p.runs.map(function (r) { return r.text; }).join("").trim();
+      if (!t) return;
+      nonEmpty++;
+      var anyBijoyFont = p.runs.some(function (r) {
+        var f = runFontName(r.props, fonts);
+        return f && E.fontIsBijoyName(f);
+      });
+      if (anyBijoyFont || E.looksLikeBijoy(t) || E.countBijoyBigrams(t) >= 2) bijoyish++;
+    });
+    var docIsBijoyHeavy = nonEmpty > 0 && bijoyish / nonEmpty >= 0.4;
+
+    progress({ stage: "Converting to Unicode", percent: 60 });
+    var converted = 0, total = 0;
+    var media = [], imgSeq = 0;
+    function registerImage(img) {
+      imgSeq++;
+      var m = { name: "image" + imgSeq + "." + img.ext, rid: "rIdImg" + imgSeq,
+                ext: img.ext, bytes: img.bytes, compressed: img.compressed };
+      media.push(m);
+      return drawingXml(m.rid, img.wTwips, img.hTwips, imgSeq);
+    }
+    function convertPara(p) {
+      var joined = p.runs.map(function (r) { return r.text || ""; }).join("");
+      var paraBijoy = paraLooksBijoy(joined, false, docIsBijoyHeavy) ||
+        p.runs.some(function (r) {
+          var f = runFontName(r.props, fonts);
+          return f && E.fontIsBijoyName(f);
+        });
+      var outRuns = p.runs.map(function (r) {
+        if (r.image) return { drawing: registerImage(r.image) };
+        if (r.text.trim()) total++;
+        var mode = classifyRun(r, fonts, paraBijoy, force);
+        if (mode === "convert") {
+          converted++;
+          return { text: E.convertBijoyToUnicode(r.text), rpr: rPrXml(r.props, "convert", fonts) };
+        }
+        return { text: r.text, rpr: rPrXml(r.props, mode, fonts) };
+      });
+      return { jc: JC[p.align] || null, runs: outRuns };
+    }
+    var outBlocks = blocks.map(function (b) {
+      if (b.type === "table") {
+        return { type: "table", rows: b.rows.map(function (r) {
+          return { widths: r.widths, bordered: r.bordered,
+                   cells: r.cells.map(function (c) { return c.map(convertPara); }) };
+        }) };
+      }
+      var cp = convertPara(b); cp.type = "p"; return cp;
+    });
+
+    if (media.some(function (m) { return m.compressed; })) {
+      progress({ stage: "Decompressing images", percent: 78 });
+      for (var mi = 0; mi < media.length; mi++) {
+        if (media[mi].compressed) {
+          try { media[mi].bytes = await inflate(media[mi].bytes); }
+          catch (e) { media.splice(mi--, 1); }         // drop undecodable image
+        }
+      }
+    }
+    progress({ stage: "Building .docx", percent: 85 });
+    var blob = await buildDocx(outBlocks, media);
+
+    progress({ stage: "Done", percent: 100 });
+    var base = file.name.replace(/\.doc$/i, "");
+    return {
+      blob: blob,
+      filename: base + "-unicode.docx",
+      textForScan: (function () {
+        var lines = [];
+        outBlocks.forEach(function (b) {
+          if (b.type === "table") {
+            b.rows.forEach(function (r) { r.cells.forEach(function (c) {
+              c.forEach(function (p) {
+                lines.push(p.runs.map(function (x) { return x.text || ""; }).join(""));
+              });
+            }); });
+          } else lines.push(b.runs.map(function (x) { return x.text || ""; }).join(""));
+        });
+        return lines.join("\n");
+      })(),
+      stats: { paragraphs: paras.length, converted: converted, runs: total,
+               fontAware: fontAware, images: media.length,
+               tables: outBlocks.filter(function (b) { return b.type === "table"; }).length }
+    };
+  }
+
+  return { convertDoc: convertDoc };
+})();
+
+</script>
+<script>
+(function () {
+  const E = window.BijoyEngine;
+  const DocConvert = window.DocConvert;
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- specimen cycle ---------- */
+  const SAMPLES = [
+    "Avwg evsjvq Mvb MvB",
+    "MYcÖRvZš¿x evsjv\u2021`k",
+    "\u00AF^vaxbZvi K_v ej\u2021Q",
+    "wek\u00A6we`\u00A8vj\u2021qi QvÎ"
+  ];
+  let specIdx = 0;
+  const specSrc = $("specSrc"), specOut = $("specOut");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function showSpec(i) {
+    specSrc.textContent = SAMPLES[i];
+    specOut.textContent = E.convertBijoyToUnicode(SAMPLES[i]);
+  }
+  showSpec(0);
+  if (!reduceMotion) {
+    setInterval(() => {
+      specIdx = (specIdx + 1) % SAMPLES.length;
+      specSrc.style.opacity = specOut.style.opacity = 0;
+      setTimeout(() => {
+        showSpec(specIdx);
+        specSrc.style.opacity = specOut.style.opacity = 1;
+      }, 450);
+    }, 4200);
+  }
+  $("specTry").addEventListener("click", () => {
+    $("pasteIn").value = SAMPLES[specIdx];
+    $("pasteIn").dispatchEvent(new Event("input"));
+    $("pasteIn").focus();
+    $("pasteIn").scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+  });
+
+  /* ---------- dropzone ---------- */
+  const dz = $("dropzone"), fileInput = $("fileInput"), queue = $("queue");
+  dz.addEventListener("click", () => fileInput.click());
+  dz.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
+  });
+  ["dragenter", "dragover"].forEach(ev =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("dragover"); }));
+  ["dragleave", "drop"].forEach(ev =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("dragover"); }));
+  dz.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
+  fileInput.addEventListener("change", () => { handleFiles(fileInput.files); fileInput.value = ""; });
+
+  function handleFiles(list) {
+    for (const f of list) processFile(f);
+  }
+
+  /* ---------- per-file processing ---------- */
+  function card(name) {
+    const el = document.createElement("div");
+    el.className = "fcard";
+    el.innerHTML =
+      '<div class="fcard-top"><div class="fname"></div><div class="fstage">queued</div></div>' +
+      '<div class="fbar"><i></i></div>' +
+      '<div class="fmsg" hidden></div>' +
+      '<div class="factions" hidden></div>' +
+      '<div class="leftovers" hidden><div class="lo-label"></div><div class="lo-chips"></div></div>';
+    el.querySelector(".fname").textContent = name;
+    queue.prepend(el);
+    return {
+      el,
+      stage: (s, pct) => {
+        el.querySelector(".fstage").textContent = s;
+        if (pct != null) el.querySelector(".fbar i").style.width = pct + "%";
+      },
+      msg: (text, isErr) => {
+        const m = el.querySelector(".fmsg");
+        m.hidden = false; m.textContent = text;
+        m.classList.toggle("err", !!isErr);
+      },
+      actions: () => { const a = el.querySelector(".factions"); a.hidden = false; return a; }
+    };
+  }
+
+  async function processFile(file) {
+    const c = card(file.name);
+    const lower = file.name.toLowerCase();
+
+    if (lower.endsWith(".doc") && !lower.endsWith(".docx")) {
+      try {
+        const force = $("forceToggle").checked;
+        const result = await DocConvert.convertDoc(file, {
+          force,
+          onProgress: (info) => c.stage(info.stage.toLowerCase(), info.percent)
+        });
+        c.el.classList.add("done");
+        c.stage("done", 100);
+        const url = URL.createObjectURL(result.blob);
+        const a = document.createElement("a");
+        a.className = "btn"; a.href = url; a.download = result.filename;
+        a.textContent = "Download " + result.filename;
+        c.actions().appendChild(a);
+        c.msg("Binary .doc rebuilt as .docx" +
+          (result.stats.fontAware ? " with font-aware detection" : "") +
+          " (" + result.stats.converted + " of " + result.stats.runs +
+          " text runs converted" +
+          (result.stats.images ? ", " + result.stats.images +
+            (result.stats.images === 1 ? " image" : " images") + " carried over" : "") +
+          (result.stats.tables ? ", " + result.stats.tables +
+            (result.stats.tables === 1 ? " table rebuilt" : " tables rebuilt") : "") +
+          "). Bold, italic, underline, sizes, alignment, images, and tables are preserved" +
+          (result.stats.converted === 0 && !force
+            ? " \u2014 if Bangla is missing, tick \u201CConvert all text\u201D and retry."
+            : "."));
+        reportLeftovers(c, result.textForScan);
+      } catch (err) {
+        console.error(err);
+        c.el.classList.add("error");
+        c.stage("failed", 100);
+        c.msg("Couldn\u2019t read this .doc: " + (err && err.message ? err.message : err) +
+          " \u2014 try re-saving it as .docx in Word/LibreOffice.", true);
+      }
+      return;
+    }
+    if (!E.detectExt(file.name)) {
+      c.el.classList.add("error");
+      c.stage("unsupported", 100);
+      c.msg("Unsupported file type. Supported: .docx, .rtf, .odt, .html, .txt", true);
+      return;
+    }
+
+    try {
+      const force = $("forceToggle").checked;
+      const result = await E.convertFile(file, {
+        force,
+        onProgress: (info) => c.stage(info.stage.toLowerCase(), info.percent)
+      });
+      c.el.classList.add("done");
+      c.stage("done", 100);
+
+      const url = URL.createObjectURL(result.blob);
+      const a = document.createElement("a");
+      a.className = "btn"; a.href = url; a.download = result.filename;
+      a.textContent = "Download " + result.filename;
+      c.actions().appendChild(a);
+
+      const converted = await extractText(result.blob, E.detectExt(file.name));
+      if (converted != null) {
+        if (!E.hasBengaliUnicode(converted)) {
+          c.msg(force
+            ? "No Bangla came out of this file — it may not contain Bijoy text."
+            : "No Bijoy-font text was found. If the Bangla was typed in a generic font, tick “Convert all text” and retry.");
+        }
+        reportLeftovers(c, converted);
+      }
+    } catch (err) {
+      console.error(err);
+      c.el.classList.add("error");
+      c.stage("failed", 100);
+      c.msg("Conversion failed: " + (err && err.message ? err.message : err), true);
+    }
+  }
+
+  async function extractText(blob, ext) {
+    try {
+      if (ext === "docx" || ext === "odt") {
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const entry = zip.file(ext === "docx" ? "word/document.xml" : "content.xml");
+        if (!entry) return null;
+        const xml = await entry.async("string");
+        return xml.replace(/<[^>]+>/g, " ")
+                  .replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+      }
+      if (ext === "txt" || ext === "html" || ext === "htm") return await blob.text();
+      return null; // rtf: escaped, skip scan
+    } catch { return null; }
+  }
+
+  function reportLeftovers(c, text) {
+    const map = E.scanUnmapped(text);
+    if (!map.size) return;
+    const box = c.el.querySelector(".leftovers");
+    box.hidden = false;
+    box.querySelector(".lo-label").textContent =
+      "Possible unmapped Bijoy glyphs survived — worth a manual check:";
+    const chips = box.querySelector(".lo-chips");
+    let shown = 0;
+    for (const [ch, count] of map) {
+      if (shown++ >= 12) break;
+      const s = document.createElement("span");
+      s.textContent = JSON.stringify(ch).slice(1, -1) + " " + E.describeCodepoint(ch) + " ×" + count;
+      chips.appendChild(s);
+    }
+  }
+
+  /* ---------- paste converter ---------- */
+  const pasteIn = $("pasteIn"), pasteOut = $("pasteOut"), copyBtn = $("copyBtn");
+  pasteIn.addEventListener("input", () => {
+    const v = pasteIn.value;
+    if (!v.trim()) {
+      pasteOut.classList.add("empty");
+      pasteOut.textContent = "Converted text appears here.";
+      copyBtn.hidden = true;
+      return;
+    }
+    pasteOut.classList.remove("empty");
+    pasteOut.textContent = E.convertBijoyToUnicode(v);
+    copyBtn.hidden = false;
+  });
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(pasteOut.textContent);
+      copyBtn.textContent = "Copied";
+      setTimeout(() => (copyBtn.textContent = "Copy Unicode text"), 1400);
+    } catch {
+      copyBtn.textContent = "Select & copy manually";
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "okkhor",
+  "version": "5.0.0",
+  "private": true,
+  "description": "Client-side Bijoy/SutonnyMJ ANSI to Unicode Bangla document converter",
+  "scripts": {
+    "build": "python3 scripts/assemble.py --check",
+    "test": "node tests/run-tests.cjs"
+  },
+  "devDependencies": {
+    "jszip": "^3.10.1"
+  }
+}

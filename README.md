@@ -1,34 +1,13 @@
-# Okkhor (অক্ষর) — Bijoy → Unicode Converter
+# Okkhor (অক্ষর)
 
-A fully client-side converter for legacy Bangla ANSI documents (SutonnyMJ and
-other Bijoy fonts) to modern Unicode Bangla. No server, no uploads — files
-never leave the browser tab.
+Client-side converter for legacy Bangla ANSI documents (Bijoy/SutonnyMJ) to
+Unicode Bangla — including full parsing of the binary Word `.doc` format in
+the browser. One HTML file, no server, files never leave the tab.
 
-**Supported inputs:** `.docx` `.rtf` `.odt` `.html` `.txt`
-(binary `.doc` is not supported — re-save as `.docx` first)
-
-## Features
-
-- Font-aware conversion for `.docx`: only runs tagged with a Bijoy font are
-  converted, so mixed English/Bangla documents come out clean. A "convert all
-  text" toggle handles Bijoy text typed in generic fonts.
-- Formatting is preserved; Bijoy font tags are re-pointed to a Unicode font
-  (Nikosh).
-- Leftover-glyph scanner flags suspicious unmapped codepoints per file.
-- Live paste box for quick text conversions.
-
-## Hosting on GitHub Pages
-
-1. Create a repository and push these files to the default branch.
-2. In the repo: **Settings → Pages → Source: Deploy from a branch**, pick the
-   branch and `/ (root)`.
-3. Your converter will be live at `https://<user>.github.io/<repo>/`.
-
-Everything is in a single `index.html`. The only external requests are CDN
-assets (JSZip from cdnjs, fonts from Google Fonts).
-
-## Credits
+- **Use it:** open `dist/index.html`, or host `dist/` on GitHub Pages.
+- **Develop:** `npm install && npm run build && npm test` — sources in `src/`,
+  docs in `agent-context/wiki/`, agent instructions in `CLAUDE.md`.
 
 Conversion engine adapted from
-[bijoy2unicode](https://github.com/JehadurRE/Bijoy2Unicode) by Md. Jehad
-(Jehadur Rahman Emran), MIT — see `licenses/bijoy2unicode-LICENSE.txt`.
+[bijoy2unicode](https://github.com/JehadurRE/Bijoy2Unicode) (MIT) — see
+`dist/licenses/`.

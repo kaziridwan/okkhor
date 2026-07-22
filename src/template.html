@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Okkhor — Bijoy to Unicode converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@500;700;800&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F3EE;
+    --card: #FBFAF7;
+    --ink: #1A2420;
+    --ink-soft: #55605A;
+    --bottle: #00693E;
+    --bottle-deep: #0B4A30;
+    --lal: #E5233D;
+    --line: #DAD8CE;
+    --line-soft: #E7E5DC;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --ui: "Archivo", system-ui, sans-serif;
+    --bangla: "Noto Serif Bengali", serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 28px 0 22px; border-bottom: 1px solid var(--line);
+    flex-wrap: wrap; gap: 10px;
+  }
+  .wordmark { display: flex; align-items: baseline; gap: 12px; }
+  .wordmark .bn {
+    font-family: var(--bangla); font-weight: 800; font-size: 30px; line-height: 1;
+    color: var(--ink);
+  }
+  .wordmark .en {
+    font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 600;
+  }
+  .privacy {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--ink-soft);
+  }
+  .privacy .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--bottle); flex: none;
+    box-shadow: 0 0 0 3px rgba(0,105,62,.14);
+  }
+
+  /* ---------- specimen (signature element) ---------- */
+  .specimen {
+    margin: 44px 0 10px;
+  }
+  .specimen .label {
+    font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-soft); font-weight: 600; margin-bottom: 14px;
+  }
+  .spec-row {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: 20px;
+  }
+  .spec-src {
+    font-family: var(--mono); font-size: clamp(15px, 2.6vw, 21px);
+    color: var(--ink-soft); text-align: right; word-break: break-all;
+  }
+  .spec-arrow {
+    color: var(--bottle); font-size: 20px; user-select: none;
+    border: 1px solid var(--line); border-radius: 50%;
+    width: 40px; height: 40px; display: grid; place-items: center;
+    background: var(--card);
+  }
+  .spec-out {
+    font-family: var(--bangla); font-weight: 700;
+    font-size: clamp(24px, 4.6vw, 40px); line-height: 1.35;
+    color: var(--ink);
+  }
+  .spec-fade { transition: opacity .45s ease; }
+  .spec-hint { margin-top: 10px; font-size: 12.5px; color: var(--ink-soft); }
+  .spec-hint button {
+    background: none; border: none; color: var(--bottle); font: inherit;
+    font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (max-width: 620px) {
+    .spec-row { grid-template-columns: 1fr; gap: 8px; }
+    .spec-src { text-align: left; }
+    .spec-arrow { width: 32px; height: 32px; font-size: 15px; transform: rotate(90deg); }
+  }
+
+  /* ---------- dropzone ---------- */
+  .dropzone {
+    margin-top: 36px;
+    border: 1.5px dashed var(--line);
+    background: var(--card);
+    border-radius: 14px;
+    padding: 44px 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    outline: none;
+  }
+  .dropzone:hover, .dropzone:focus-visible { border-color: var(--bottle); }
+  .dropzone:focus-visible { box-shadow: 0 0 0 3px rgba(0,105,62,.18); }
+  .dropzone.dragover { border-color: var(--bottle); background: #F0F6F2; }
+  .dz-title { font-size: 18px; font-weight: 600; }
+  .dz-sub { margin-top: 6px; color: var(--ink-soft); font-size: 13.5px; }
+  .dz-formats {
+    margin-top: 16px; display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  }
+  .dz-formats span {
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: 5px; padding: 2px 8px;
+    background: var(--paper);
+  }
+  .options { margin-top: 14px; display: flex; justify-content: center; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 13px; color: var(--ink-soft); cursor: pointer; user-select: none;
+  }
+  .toggle input { accent-color: var(--bottle); width: 15px; height: 15px; cursor: pointer; }
+
+  /* ---------- file results ---------- */
+  .queue { margin-top: 26px; display: grid; gap: 12px; }
+  .fcard {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .fcard-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .fname { font-weight: 600; font-size: 14.5px; word-break: break-all; flex: 1; min-width: 180px; }
+  .fstage { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .fbar {
+    margin-top: 12px; height: 3px; background: var(--line-soft); border-radius: 2px; overflow: hidden;
+  }
+  .fbar i {
+    display: block; height: 100%; width: 0%;
+    background: var(--bottle); transition: width .25s ease;
+  }
+  .fcard.done .fbar i { background: var(--bottle); }
+  .fcard.error .fbar i { background: var(--lal); }
+  .fmsg { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
+  .fmsg.err { color: var(--lal); }
+  .factions { margin-top: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bottle); color: #fff; border: none; border-radius: 8px;
+    font: 600 13.5px var(--ui); padding: 9px 16px; cursor: pointer;
+    text-decoration: none;
+    transition: background .15s ease;
+  }
+  .btn:hover { background: var(--bottle-deep); }
+  .btn:focus-visible { outline: 2px solid var(--bottle-deep); outline-offset: 2px; }
+  .leftovers { margin-top: 12px; }
+  .leftovers .lo-label {
+    font-size: 12px; color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .lo-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lo-chips span {
+    font-family: var(--mono); font-size: 11.5px;
+    border: 1px solid #EED3C6; background: #FBF3EC; color: #8A4A1F;
+    border-radius: 5px; padding: 2px 7px;
+  }
+
+  /* ---------- paste converter ---------- */
+  .section-h {
+    margin: 56px 0 6px; display: flex; align-items: baseline; gap: 12px;
+  }
+  .section-h h2 { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+  .section-h .rule { flex: 1; height: 1px; background: var(--line); }
+  .section-sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 16px; }
+  .paste-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) { .paste-grid { grid-template-columns: 1fr; } }
+  .pane { display: flex; flex-direction: column; }
+  .pane-label {
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    font-weight: 600; color: var(--ink-soft); margin-bottom: 7px;
+  }
+  textarea {
+    font-family: var(--mono); font-size: 14px; line-height: 1.6;
+    background: var(--card); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; min-height: 170px; resize: vertical; outline: none;
+  }
+  textarea:focus-visible { border-color: var(--bottle); box-shadow: 0 0 0 3px rgba(0,105,62,.14); }
+  .out-box {
+    font-family: var(--bangla); font-size: 19px; line-height: 1.9;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; min-height: 170px; white-space: pre-wrap; word-break: break-word;
+  }
+  .out-box.empty { color: #A9AFA9; font-family: var(--ui); font-size: 13.5px; }
+  .pane-foot { margin-top: 8px; display: flex; justify-content: flex-end; }
+  .mini-btn {
+    background: none; border: 1px solid var(--line); border-radius: 7px;
+    font: 500 12.5px var(--ui); color: var(--ink-soft);
+    padding: 5px 12px; cursor: pointer;
+  }
+  .mini-btn:hover { border-color: var(--bottle); color: var(--bottle); }
+
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--ink-soft); display: grid; gap: 6px;
+  }
+  footer a { color: var(--bottle); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="wordmark">
+      <span class="bn">অক্ষর</span>
+      <span class="en">Okkhor · Bijoy → Unicode</span>
+    </div>
+    <span class="privacy"><span class="dot" aria-hidden="true"></span>Runs entirely in this tab — files are never uploaded</span>
+  </header>
+
+  <section class="specimen" aria-label="Conversion example">
+    <div class="label">What this does</div>
+    <div class="spec-row">
+      <div class="spec-src spec-fade" id="specSrc"></div>
+      <div class="spec-arrow" aria-hidden="true">→</div>
+      <div class="spec-out spec-fade" id="specOut" lang="bn"></div>
+    </div>
+    <p class="spec-hint">Legacy ANSI text (SutonnyMJ and other Bijoy fonts) becomes real Unicode Bangla.
+      <button type="button" id="specTry">Try this sample below</button></p>
+  </section>
+
+  <div class="dropzone" id="dropzone" role="button" tabindex="0"
+       aria-label="Drop Word files here or press Enter to choose files">
+    <div class="dz-title">Drop your Word files here</div>
+    <div class="dz-sub">or click to choose — you can add several at once</div>
+    <div class="dz-formats">
+      <span>.docx</span><span>.doc</span><span>.rtf</span><span>.odt</span><span>.html</span><span>.txt</span>
+    </div>
+  </div>
+  <div class="options">
+    <label class="toggle">
+      <input type="checkbox" id="forceToggle">
+      Convert all text, even runs not tagged with a Bijoy font
+    </label>
+  </div>
+  <input type="file" id="fileInput" multiple hidden
+         accept=".docx,.rtf,.odt,.html,.htm,.txt,.doc">
+
+  <div class="queue" id="queue" aria-live="polite"></div>
+
+  <div class="section-h"><h2>Quick paste</h2><div class="rule"></div></div>
+  <p class="section-sub">Paste Bijoy ANSI text for an instant conversion — updates as you type.</p>
+  <div class="paste-grid">
+    <div class="pane">
+      <div class="pane-label">Bijoy ANSI in</div>
+      <textarea id="pasteIn" spellcheck="false"
+        placeholder="Avwg evsjvq Mvb MvB…"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-label">Unicode Bangla out</div>
+      <div class="out-box empty" id="pasteOut" lang="bn">Converted text appears here.</div>
+      <div class="pane-foot">
+        <button class="mini-btn" id="copyBtn" type="button" hidden>Copy Unicode text</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Converted files keep their formatting; Bijoy font tags are re-pointed to a Unicode Bangla font (Nikosh). Install <strong>Nikosh</strong>, or switch the font to Kalpurush / Noto Sans Bengali in Word.</div>
+    <div>Binary <span style="font-family:var(--mono)">.doc</span> files are parsed directly in the browser — OLE container, piece table, character and paragraph formatting, and the font table — then rebuilt as a fresh <span style="font-family:var(--mono)">.docx</span> with the same font-aware Bijoy detection as .docx input. Bold, italic, underline, sizes, alignment, images, and tables all survive — including inline pictures, floating shapes, vector diagrams (EMF/WMF, decompressed in the browser), and real table grids with original column widths and borders. Merged cells are the one remaining gap: they come through as separate cells.</div>
+    <div>Conversion engine adapted from <a href="https://github.com/JehadurRE/Bijoy2Unicode" target="_blank" rel="noopener">bijoy2unicode</a> by Md.&nbsp;Jehad (MIT).</div>
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/*__ENGINE__*/
+</script>
+<script>
+(function () {
+  const E = window.BijoyEngine;
+  const DocConvert = window.DocConvert;
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- specimen cycle ---------- */
+  const SAMPLES = [
+    "Avwg evsjvq Mvb MvB",
+    "MYcÖRvZš¿x evsjv\u2021`k",
+    "\u00AF^vaxbZvi K_v ej\u2021Q",
+    "wek\u00A6we`\u00A8vj\u2021qi QvÎ"
+  ];
+  let specIdx = 0;
+  const specSrc = $("specSrc"), specOut = $("specOut");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function showSpec(i) {
+    specSrc.textContent = SAMPLES[i];
+    specOut.textContent = E.convertBijoyToUnicode(SAMPLES[i]);
+  }
+  showSpec(0);
+  if (!reduceMotion) {
+    setInterval(() => {
+      specIdx = (specIdx + 1) % SAMPLES.length;
+      specSrc.style.opacity = specOut.style.opacity = 0;
+      setTimeout(() => {
+        showSpec(specIdx);
+        specSrc.style.opacity = specOut.style.opacity = 1;
+      }, 450);
+    }, 4200);
+  }
+  $("specTry").addEventListener("click", () => {
+    $("pasteIn").value = SAMPLES[specIdx];
+    $("pasteIn").dispatchEvent(new Event("input"));
+    $("pasteIn").focus();
+    $("pasteIn").scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+  });
+
+  /* ---------- dropzone ---------- */
+  const dz = $("dropzone"), fileInput = $("fileInput"), queue = $("queue");
+  dz.addEventListener("click", () => fileInput.click());
+  dz.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
+  });
+  ["dragenter", "dragover"].forEach(ev =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("dragover"); }));
+  ["dragleave", "drop"].forEach(ev =>
+    dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("dragover"); }));
+  dz.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
+  fileInput.addEventListener("change", () => { handleFiles(fileInput.files); fileInput.value = ""; });
+
+  function handleFiles(list) {
+    for (const f of list) processFile(f);
+  }
+
+  /* ---------- per-file processing ---------- */
+  function card(name) {
+    const el = document.createElement("div");
+    el.className = "fcard";
+    el.innerHTML =
+      '<div class="fcard-top"><div class="fname"></div><div class="fstage">queued</div></div>' +
+      '<div class="fbar"><i></i></div>' +
+      '<div class="fmsg" hidden></div>' +
+      '<div class="factions" hidden></div>' +
+      '<div class="leftovers" hidden><div class="lo-label"></div><div class="lo-chips"></div></div>';
+    el.querySelector(".fname").textContent = name;
+    queue.prepend(el);
+    return {
+      el,
+      stage: (s, pct) => {
+        el.querySelector(".fstage").textContent = s;
+        if (pct != null) el.querySelector(".fbar i").style.width = pct + "%";
+      },
+      msg: (text, isErr) => {
+        const m = el.querySelector(".fmsg");
+        m.hidden = false; m.textContent = text;
+        m.classList.toggle("err", !!isErr);
+      },
+      actions: () => { const a = el.querySelector(".factions"); a.hidden = false; return a; }
+    };
+  }
+
+  async function processFile(file) {
+    const c = card(file.name);
+    const lower = file.name.toLowerCase();
+
+    if (lower.endsWith(".doc") && !lower.endsWith(".docx")) {
+      try {
+        const force = $("forceToggle").checked;
+        const result = await DocConvert.convertDoc(file, {
+          force,
+          onProgress: (info) => c.stage(info.stage.toLowerCase(), info.percent)
+        });
+        c.el.classList.add("done");
+        c.stage("done", 100);
+        const url = URL.createObjectURL(result.blob);
+        const a = document.createElement("a");
+        a.className = "btn"; a.href = url; a.download = result.filename;
+        a.textContent = "Download " + result.filename;
+        c.actions().appendChild(a);
+        c.msg("Binary .doc rebuilt as .docx" +
+          (result.stats.fontAware ? " with font-aware detection" : "") +
+          " (" + result.stats.converted + " of " + result.stats.runs +
+          " text runs converted" +
+          (result.stats.images ? ", " + result.stats.images +
+            (result.stats.images === 1 ? " image" : " images") + " carried over" : "") +
+          (result.stats.tables ? ", " + result.stats.tables +
+            (result.stats.tables === 1 ? " table rebuilt" : " tables rebuilt") : "") +
+          "). Bold, italic, underline, sizes, alignment, images, and tables are preserved" +
+          (result.stats.converted === 0 && !force
+            ? " \u2014 if Bangla is missing, tick \u201CConvert all text\u201D and retry."
+            : "."));
+        reportLeftovers(c, result.textForScan);
+      } catch (err) {
+        console.error(err);
+        c.el.classList.add("error");
+        c.stage("failed", 100);
+        c.msg("Couldn\u2019t read this .doc: " + (err && err.message ? err.message : err) +
+          " \u2014 try re-saving it as .docx in Word/LibreOffice.", true);
+      }
+      return;
+    }
+    if (!E.detectExt(file.name)) {
+      c.el.classList.add("error");
+      c.stage("unsupported", 100);
+      c.msg("Unsupported file type. Supported: .docx, .rtf, .odt, .html, .txt", true);
+      return;
+    }
+
+    try {
+      const force = $("forceToggle").checked;
+      const result = await E.convertFile(file, {
+        force,
+        onProgress: (info) => c.stage(info.stage.toLowerCase(), info.percent)
+      });
+      c.el.classList.add("done");
+      c.stage("done", 100);
+
+      const url = URL.createObjectURL(result.blob);
+      const a = document.createElement("a");
+      a.className = "btn"; a.href = url; a.download = result.filename;
+      a.textContent = "Download " + result.filename;
+      c.actions().appendChild(a);
+
+      const converted = await extractText(result.blob, E.detectExt(file.name));
+      if (converted != null) {
+        if (!E.hasBengaliUnicode(converted)) {
+          c.msg(force
+            ? "No Bangla came out of this file — it may not contain Bijoy text."
+            : "No Bijoy-font text was found. If the Bangla was typed in a generic font, tick “Convert all text” and retry.");
+        }
+        reportLeftovers(c, converted);
+      }
+    } catch (err) {
+      console.error(err);
+      c.el.classList.add("error");
+      c.stage("failed", 100);
+      c.msg("Conversion failed: " + (err && err.message ? err.message : err), true);
+    }
+  }
+
+  async function extractText(blob, ext) {
+    try {
+      if (ext === "docx" || ext === "odt") {
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const entry = zip.file(ext === "docx" ? "word/document.xml" : "content.xml");
+        if (!entry) return null;
+        const xml = await entry.async("string");
+        return xml.replace(/<[^>]+>/g, " ")
+                  .replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+      }
+      if (ext === "txt" || ext === "html" || ext === "htm") return await blob.text();
+      return null; // rtf: escaped, skip scan
+    } catch { return null; }
+  }
+
+  function reportLeftovers(c, text) {
+    const map = E.scanUnmapped(text);
+    if (!map.size) return;
+    const box = c.el.querySelector(".leftovers");
+    box.hidden = false;
+    box.querySelector(".lo-label").textContent =
+      "Possible unmapped Bijoy glyphs survived — worth a manual check:";
+    const chips = box.querySelector(".lo-chips");
+    let shown = 0;
+    for (const [ch, count] of map) {
+      if (shown++ >= 12) break;
+      const s = document.createElement("span");
+      s.textContent = JSON.stringify(ch).slice(1, -1) + " " + E.describeCodepoint(ch) + " ×" + count;
+      chips.appendChild(s);
+    }
+  }
+
+  /* ---------- paste converter ---------- */
+  const pasteIn = $("pasteIn"), pasteOut = $("pasteOut"), copyBtn = $("copyBtn");
+  pasteIn.addEventListener("input", () => {
+    const v = pasteIn.value;
+    if (!v.trim()) {
+      pasteOut.classList.add("empty");
+      pasteOut.textContent = "Converted text appears here.";
+      copyBtn.hidden = true;
+      return;
+    }
+    pasteOut.classList.remove("empty");
+    pasteOut.textContent = E.convertBijoyToUnicode(v);
+    copyBtn.hidden = false;
+  });
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(pasteOut.textContent);
+      copyBtn.textContent = "Copied";
+      setTimeout(() => (copyBtn.textContent = "Copy Unicode text"), 1400);
+    } catch {
+      copyBtn.textContent = "Select & copy manually";
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120">
+  <rect x="10" y="10" width="80" height="40" fill="#00693E" rx="6"/>
+  <rect x="110" y="70" width="80" height="40" fill="#E5233D" rx="6"/>
+  <line x1="90" y1="30" x2="150" y2="70" stroke="#1A2420" stroke-width="3"/>
+  <text x="20" y="35" font-size="14" fill="white">Bijoy</text>
+  <text x="118" y="95" font-size="14" fill="white">Unicode</text>
+</svg>
